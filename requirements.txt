@@ -1,3 +1,5 @@
 magpylib
 plotly
 ipywidgets
+scipy
+pandas
