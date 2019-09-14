@@ -3,4 +3,4 @@
  
 Launch Jupyterlab [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=lab)
 
-Launch voila [![Binder](https://github.com/QuantStack/voila/blob/master/docs/source/voila.svg =20x)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila)
+Launch voila [![Binder](https://github.com/QuantStack/voila/blob/master/docs/source/voila.svg =100x20)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila)
