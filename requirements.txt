@@ -3,3 +3,4 @@ plotly
 ipywidgets
 scipy
 pandas
+voila
