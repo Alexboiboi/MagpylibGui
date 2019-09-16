@@ -1,7 +1,7 @@
 # MagpylibGui
  A graphical user interface for the magpylib package in jupyter with ipywidgets
  
-Launch Jupyterlab: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=lab)
+[comment]: <> Launch Jupyterlab: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=lab)
 
 
 Launch Jupyter notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master)
