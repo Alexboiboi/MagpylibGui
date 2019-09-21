@@ -19,6 +19,9 @@ import numpy as np
 import magpylib as magpy
 import plotly.graph_objects as go
 from magpylib._lib.mathLibPublic import rotatePosition
+from magpylib._lib.classes.magnets import Box, Cylinder, Sphere
+from magpylib._lib.classes.currents import Line, Circular
+from magpylib._lib.classes.moments import Dipole
 
 
 # # Sources definitions
@@ -164,3 +167,25 @@ def _getIntensity(points, mag, pos):
 
 def _getColorscale(cst=0.1):
     return [[0, 'turquoise'], [0.5*(1-cst), 'turquoise'],[0.5*(1+cst), 'magenta'], [1, 'magenta']]
+
+
+def getSourceTrace(source, cst=0, color=None, Nver=40, showhoverdata=True):
+    s = source
+    if isinstance(s, Box):
+        trace =  makeBox(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, cst=cst)
+    elif isinstance(s, Cylinder):
+        trace =   makeCylinder(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
+    elif isinstance(s, Sphere):
+        trace =   makeSphere(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
+    elif isinstance(s, Line):
+        trace =   makeLine(curr=s.current, vertices=s.vertices, pos=s.position, angle=s.angle, axis=s.axis, color=color)
+    elif isinstance(s, Circular):
+        trace =   makeCircular(curr=s.current, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, N=Nver, color=color)
+    elif isinstance(s, Dipole):
+        trace =   makeDipole(moment=s.moment, pos=s.position, angle=s.angle, axis=s.axis, color=color)
+    else:
+        trace =  None
+    if showhoverdata:
+        trace.hoverinfo = 'text'
+        trace.text = str(s).replace('\n', '<br>')
+    return trace
