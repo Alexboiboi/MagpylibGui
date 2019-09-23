@@ -1,0 +1,84 @@
+{
+    "layout": {},
+    "sources": {
+        "box_01": {
+            "id": "box_01",
+            "name": "box",
+            "properties": {
+                "angle": 45,
+                "axis": [
+                    1,
+                    1,
+                    1
+                ],
+                "dim": [
+                    40,
+                    40,
+                    20
+                ],
+                "mag": [
+                    0,
+                    0,
+                    -1
+                ],
+                "pos": [
+                    -40,
+                    0,
+                    0
+                ]
+            },
+            "source_type": "box"
+        },
+        "cylinder_01": {
+            "id": "cylinder_01",
+            "name": "cylinder",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "dim": [
+                    40,
+                    30
+                ],
+                "mag": [
+                    1,
+                    0,
+                    0
+                ],
+                "pos": [
+                    40,
+                    0,
+                    40
+                ]
+            },
+            "source_type": "cylinder"
+        },
+        "sphere_01": {
+            "id": "sphere_01",
+            "name": "sphere",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "dim": 30,
+                "mag": [
+                    0,
+                    1,
+                    0
+                ],
+                "pos": [
+                    40,
+                    0,
+                    -40
+                ]
+            },
+            "source_type": "sphere"
+        }
+    }
+}

@@ -1,0 +1,164 @@
+{
+    "layout": {},
+    "sources": {
+        "box_01": {
+            "id": "box_01",
+            "name": "box",
+            "properties": {
+                "angle": 45,
+                "axis": [
+                    1,
+                    1,
+                    1
+                ],
+                "dim": [
+                    40,
+                    40,
+                    20
+                ],
+                "mag": [
+                    0,
+                    0,
+                    -1
+                ],
+                "pos": [
+                    -40,
+                    0,
+                    0
+                ]
+            },
+            "source_type": "box"
+        },
+        "circularCurrent_01": {
+            "id": "circularCurrent_01",
+            "name": "circular current",
+            "properties": {
+                "angle": 45,
+                "axis": [
+                    1,
+                    1,
+                    0
+                ],
+                "dim": 50,
+                "mag": [
+                    0,
+                    0,
+                    50
+                ],
+                "pos": [
+                    0,
+                    40,
+                    -50
+                ]
+            },
+            "source_type": "circularCurrent"
+        },
+        "cylinder_01": {
+            "id": "cylinder_01",
+            "name": "cylinder",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "dim": [
+                    40,
+                    30
+                ],
+                "mag": [
+                    1,
+                    0,
+                    0
+                ],
+                "pos": [
+                    40,
+                    0,
+                    40
+                ]
+            },
+            "source_type": "cylinder"
+        },
+        "dipole_01": {
+            "id": "dipole_01",
+            "name": "dipole",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "dim": [
+                    50,
+                    50,
+                    50
+                ],
+                "mag": [
+                    0,
+                    0,
+                    50
+                ],
+                "pos": [
+                    0,
+                    1,
+                    0
+                ]
+            },
+            "source_type": "dipole"
+        },
+        "lineCurrent_01": {
+            "id": "lineCurrent_01",
+            "name": "line current",
+            "properties": {
+                "angle": -45,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "dim": [
+                    50,
+                    50,
+                    50
+                ],
+                "mag": [
+                    0,
+                    0,
+                    50
+                ],
+                "pos": [
+                    10,
+                    -40,
+                    40
+                ]
+            },
+            "source_type": "lineCurrent"
+        },
+        "sphere_01": {
+            "id": "sphere_01",
+            "name": "sphere",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "dim": 30,
+                "mag": [
+                    0,
+                    1,
+                    0
+                ],
+                "pos": [
+                    40,
+                    0,
+                    -40
+                ]
+            },
+            "source_type": "sphere"
+        }
+    }
+}
