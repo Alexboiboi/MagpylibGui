@@ -4,5 +4,4 @@ ipywidgets
 scipy
 pandas
 voila
-glob
 json
