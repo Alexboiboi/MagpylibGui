@@ -1,6 +1,6 @@
 magpylib
-plotly
-ipywidgets
+plotly>=4.1
+ipywidgets>=7.5
 scipy
 pandas
 voila
