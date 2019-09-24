@@ -1,9 +1,10 @@
 {
     "layout": {},
+    "sensors": {},
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "bottom left",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -31,7 +32,7 @@
         },
         "box_02": {
             "id": "box_02",
-            "name": "bottom right",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -59,7 +60,7 @@
         },
         "box_03": {
             "id": "box_03",
-            "name": "top left",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -87,7 +88,7 @@
         },
         "box_04": {
             "id": "box_04",
-            "name": "top right",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [

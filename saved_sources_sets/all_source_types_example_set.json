@@ -1,9 +1,10 @@
 {
     "layout": {},
+    "sensors": {},
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "box",
+            "name": "",
             "properties": {
                 "angle": 45,
                 "axis": [
@@ -29,33 +30,9 @@
             },
             "source_type": "box"
         },
-        "circularCurrent_01": {
-            "id": "circularCurrent_01",
-            "name": "circular current",
-            "properties": {
-                "angle": 45,
-                "axis": [
-                    1,
-                    1,
-                    0
-                ],
-                "dim": 50,
-                "mag": [
-                    0,
-                    0,
-                    50
-                ],
-                "pos": [
-                    0,
-                    40,
-                    -50
-                ]
-            },
-            "source_type": "circularCurrent"
-        },
         "cylinder_01": {
             "id": "cylinder_01",
-            "name": "cylinder",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -82,7 +59,7 @@
         },
         "dipole_01": {
             "id": "dipole_01",
-            "name": "dipole",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -110,7 +87,7 @@
         },
         "lineCurrent_01": {
             "id": "lineCurrent_01",
-            "name": "line current",
+            "name": "",
             "properties": {
                 "angle": -45,
                 "axis": [
@@ -138,7 +115,7 @@
         },
         "sphere_01": {
             "id": "sphere_01",
-            "name": "sphere",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [

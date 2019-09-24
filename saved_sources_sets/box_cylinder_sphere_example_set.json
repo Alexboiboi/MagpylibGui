@@ -1,9 +1,10 @@
 {
     "layout": {},
+    "sensors": {},
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "box",
+            "name": "",
             "properties": {
                 "angle": 45,
                 "axis": [
@@ -31,7 +32,7 @@
         },
         "cylinder_01": {
             "id": "cylinder_01",
-            "name": "cylinder",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -58,7 +59,7 @@
         },
         "sphere_01": {
             "id": "sphere_01",
-            "name": "sphere",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
