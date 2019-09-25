@@ -22,11 +22,44 @@ from magpylib._lib.mathLibPublic import rotatePosition
 from magpylib._lib.classes.magnets import Box, Cylinder, Sphere
 from magpylib._lib.classes.currents import Line, Circular
 from magpylib._lib.classes.moments import Dipole
+from magpylib._lib.classes.sensor import Sensor
 
 
 # # Sources definitions
 
 # +
+
+
+def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, **kwargs):
+    box = go.Mesh3d(
+        i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
+        j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
+        k = np.array([0, 7, 2, 3, 6, 7, 1, 2, 5, 5, 7, 6]),
+        showscale=False,
+        name='box'
+    )
+    if 'dim' not in kwargs:
+        dim = (10,10,2)
+    dd = 0.8 # shape modifier 
+    x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
+    y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
+    z = np.array([-1, -1, -1, -1, 1, 1, 1, 1])*0.5*dim[2]+pos[2]
+    points = np.array([x,y,z])
+    
+    cst=False
+    if cst is not False:
+        box.colorscale = _getColorscale(cst)
+        box.intensity = _getIntensity(points=(x,y,z), mag=mag, pos=pos)
+    elif color is not None:
+        box.color = color
+    if angle!=0:
+        points = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+    
+    box.x , box.y, box.z = points
+    box.update(**kwargs)
+    return box
+
+
 def makeBox(mag=(0,0,1),  dim = (10,10,10), pos = (0,0,0), angle=0, axis=(0,0,1), cst=0.1, color=None, **kwargs):
     box = go.Mesh3d(
         i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
@@ -43,7 +76,7 @@ def makeBox(mag=(0,0,1),  dim = (10,10,10), pos = (0,0,0), angle=0, axis=(0,0,1)
     if cst is not False:
         box.colorscale = _getColorscale(cst)
         box.intensity = _getIntensity(points=(x,y,z), mag=mag, pos=pos)
-    elif color!=None:
+    elif color is not None:
         box.color = color
     if angle!=0:
         points = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
@@ -114,15 +147,15 @@ def makeSphere(mag=(0,0,1), dim = 5, pos = (0,0,0), angle=0, axis=(0,0,1), cst=F
     sphere.update(**kwargs)
     return sphere
 
-def makeDipole(moment=(0.0, 0.0, 1), pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 0.0, 1.0), color=None, **kwargs):
+def makeDipole(moment=(0.0, 0.0, 1), pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 0.0, 1.0), color=None, sizeref=1, **kwargs):
     x,y,z = np.array([[p] for p in pos])
     moment= np.array(moment)/np.linalg.norm(moment)
-    u,v,w =np.array([[m] for m in moment]) 
     
     if angle!=0:
-        u,v,w = rotatePosition(np.array([u,v,w]), angle, axis, anchor=pos)
-        
-    dipole = go.Cone(x=x,y=y,z=z, u=u,v=v,w=w, sizeref = 1, name=f'dipole ({moment})mT/mm^3', sizemode = 'absolute', showscale=False)    
+        moment = rotatePosition(moment, angle, axis, anchor=pos)
+     
+    u,v,w = [[m] for m in moment]
+    dipole = go.Cone(x=x,y=y,z=z, u=u,v=v,w=w, sizeref = sizeref, name=f'dipole ({moment})mT/mm^3', sizemode = 'absolute', showscale=False)    
     dipole.update(**kwargs)
     return dipole
 
@@ -169,20 +202,22 @@ def _getColorscale(cst=0.1):
     return [[0, 'turquoise'], [0.5*(1-cst), 'turquoise'],[0.5*(1+cst), 'magenta'], [1, 'magenta']]
 
 
-def getSourceTrace(source, cst=0, color=None, Nver=40, showhoverdata=True):
-    s = source
+def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1):
+    s = input_obj
     if isinstance(s, Box):
-        trace =  makeBox(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, cst=cst)
+        trace = makeBox(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, cst=cst)
     elif isinstance(s, Cylinder):
-        trace =   makeCylinder(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
+        trace = makeCylinder(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
     elif isinstance(s, Sphere):
-        trace =   makeSphere(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
+        trace = makeSphere(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
     elif isinstance(s, Line):
-        trace =   makeLine(curr=s.current, vertices=s.vertices, pos=s.position, angle=s.angle, axis=s.axis, color=color)
+        trace = makeLine(curr=s.current, vertices=s.vertices, pos=s.position, angle=s.angle, axis=s.axis, color=color)
     elif isinstance(s, Circular):
-        trace =   makeCircular(curr=s.current, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, N=Nver, color=color)
+        trace = makeCircular(curr=s.current, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, N=Nver, color=color)
     elif isinstance(s, Dipole):
-        trace =   makeDipole(moment=s.moment, pos=s.position, angle=s.angle, axis=s.axis, color=color)
+        trace = makeDipole(moment=s.moment, pos=s.position, angle=s.angle, axis=s.axis, sizeref=dipolesizeref, color=color)
+    elif isinstance(s, Sensor):
+        trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, color=color)
     else:
         trace =  None
     if showhoverdata:

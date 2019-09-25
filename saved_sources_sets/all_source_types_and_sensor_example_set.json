@@ -1,6 +1,25 @@
 {
     "layout": {},
-    "sensors": {},
+    "sensors": {
+        "hall-3d_01": {
+            "id": "hall-3d_01",
+            "name": "",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "pos": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "sensor_type": "hall-3d"
+        }
+    },
     "sources": {
         "box_01": {
             "id": "box_01",
@@ -29,6 +48,26 @@
                 ]
             },
             "source_type": "box"
+        },
+        "circularCurrent_01": {
+            "id": "circularCurrent_01",
+            "name": "",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "curr": 70,
+                "dim": 70,
+                "pos": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "source_type": "circularCurrent"
         },
         "cylinder_01": {
             "id": "cylinder_01",
@@ -67,15 +106,10 @@
                     0,
                     1
                 ],
-                "dim": [
-                    50,
-                    50,
-                    50
-                ],
-                "mag": [
+                "moment": [
+                    1,
                     0,
-                    0,
-                    50
+                    0
                 ],
                 "pos": [
                     0,
@@ -95,20 +129,23 @@
                     0,
                     1
                 ],
-                "dim": [
-                    50,
-                    50,
-                    50
-                ],
-                "mag": [
-                    0,
-                    0,
-                    50
-                ],
+                "curr": 1,
                 "pos": [
                     10,
                     -40,
                     40
+                ],
+                "vertices": [
+                    [
+                        -10,
+                        0,
+                        0
+                    ],
+                    [
+                        10,
+                        0,
+                        0
+                    ]
                 ]
             },
             "source_type": "lineCurrent"

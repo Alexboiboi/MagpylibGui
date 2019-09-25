@@ -1,9 +1,10 @@
 {
     "layout": {},
+    "sensors": {},
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "box",
+            "name": "",
             "properties": {
                 "angle": 45,
                 "axis": [
@@ -31,31 +32,27 @@
         },
         "circularCurrent_01": {
             "id": "circularCurrent_01",
-            "name": "circular current",
+            "name": "",
             "properties": {
-                "angle": 45,
+                "angle": 0,
                 "axis": [
-                    1,
-                    1,
-                    0
-                ],
-                "dim": 50,
-                "mag": [
                     0,
                     0,
-                    50
+                    1
                 ],
+                "curr": 70,
+                "dim": 70,
                 "pos": [
                     0,
-                    40,
-                    -50
+                    0,
+                    0
                 ]
             },
             "source_type": "circularCurrent"
         },
         "cylinder_01": {
             "id": "cylinder_01",
-            "name": "cylinder",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -82,7 +79,7 @@
         },
         "dipole_01": {
             "id": "dipole_01",
-            "name": "dipole",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -90,15 +87,10 @@
                     0,
                     1
                 ],
-                "dim": [
-                    50,
-                    50,
-                    50
-                ],
-                "mag": [
+                "moment": [
+                    1,
                     0,
-                    0,
-                    50
+                    0
                 ],
                 "pos": [
                     0,
@@ -110,7 +102,7 @@
         },
         "lineCurrent_01": {
             "id": "lineCurrent_01",
-            "name": "line current",
+            "name": "",
             "properties": {
                 "angle": -45,
                 "axis": [
@@ -118,27 +110,30 @@
                     0,
                     1
                 ],
-                "dim": [
-                    50,
-                    50,
-                    50
-                ],
-                "mag": [
-                    0,
-                    0,
-                    50
-                ],
+                "curr": 1,
                 "pos": [
                     10,
                     -40,
                     40
+                ],
+                "vertices": [
+                    [
+                        -10,
+                        0,
+                        0
+                    ],
+                    [
+                        10,
+                        0,
+                        0
+                    ]
                 ]
             },
             "source_type": "lineCurrent"
         },
         "sphere_01": {
             "id": "sphere_01",
-            "name": "sphere",
+            "name": "",
             "properties": {
                 "angle": 0,
                 "axis": [
