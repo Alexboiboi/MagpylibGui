@@ -8,4 +8,4 @@
 
 Launch Jupyter notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master)
 
-Launch voila: [![Binder](https://github.com/QuantStack/voila/blob/master/docs/source/voila.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila/render/00_MagpylibGui_voila.ipynb)
+Launch voila: [![Binder](https://github.com/voila-dashboards/voila/raw/master/docs/source/voila-logo.svg?sanitize=true)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila/render/00_MagpylibGui_voila.ipynb)
