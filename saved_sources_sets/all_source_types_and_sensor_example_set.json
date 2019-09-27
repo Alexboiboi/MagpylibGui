@@ -3,7 +3,7 @@
     "sensors": {
         "hall-3d_01": {
             "id": "hall-3d_01",
-            "name": "",
+            "name": "Hall-3d-sensor",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -23,7 +23,7 @@
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "",
+            "name": "box magnet",
             "properties": {
                 "angle": 45,
                 "axis": [
@@ -51,7 +51,7 @@
         },
         "circularCurrent_01": {
             "id": "circularCurrent_01",
-            "name": "",
+            "name": "circular current",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -71,7 +71,7 @@
         },
         "cylinder_01": {
             "id": "cylinder_01",
-            "name": "",
+            "name": "cylinder magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -98,7 +98,7 @@
         },
         "dipole_01": {
             "id": "dipole_01",
-            "name": "",
+            "name": "dipole",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -121,7 +121,7 @@
         },
         "lineCurrent_01": {
             "id": "lineCurrent_01",
-            "name": "",
+            "name": "line current",
             "properties": {
                 "angle": -45,
                 "axis": [
@@ -152,7 +152,7 @@
         },
         "sphere_01": {
             "id": "sphere_01",
-            "name": "",
+            "name": "sphere magnet",
             "properties": {
                 "angle": 0,
                 "axis": [

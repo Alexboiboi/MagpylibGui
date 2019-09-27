@@ -1,10 +1,29 @@
 {
     "layout": {},
-    "sensors": {},
+    "sensors": {
+        "hall-3d_01": {
+            "id": "hall-3d_01",
+            "name": "hall-3d-sensor",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "pos": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "sensor_type": "hall-3d"
+        }
+    },
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "",
+            "name": "box magnet",
             "properties": {
                 "angle": 45,
                 "axis": [
@@ -32,7 +51,7 @@
         },
         "cylinder_01": {
             "id": "cylinder_01",
-            "name": "",
+            "name": "cylinder magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -59,7 +78,7 @@
         },
         "sphere_01": {
             "id": "sphere_01",
-            "name": "",
+            "name": "sphere magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
