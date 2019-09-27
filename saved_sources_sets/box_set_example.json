@@ -1,10 +1,29 @@
 {
     "layout": {},
-    "sensors": {},
+    "sensors": {
+        "hall-3d_01": {
+            "id": "hall-3d_01",
+            "name": "hall-3d sensor",
+            "properties": {
+                "angle": 0,
+                "axis": [
+                    0,
+                    0,
+                    1
+                ],
+                "pos": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "sensor_type": "hall-3d"
+        }
+    },
     "sources": {
         "box_01": {
             "id": "box_01",
-            "name": "",
+            "name": "bottom left magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -32,7 +51,7 @@
         },
         "box_02": {
             "id": "box_02",
-            "name": "",
+            "name": "bottom right magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -60,7 +79,7 @@
         },
         "box_03": {
             "id": "box_03",
-            "name": "",
+            "name": "top left magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
@@ -88,7 +107,7 @@
         },
         "box_04": {
             "id": "box_04",
-            "name": "",
+            "name": "top right magnet",
             "properties": {
                 "angle": 0,
                 "axis": [
