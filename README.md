@@ -1,14 +1,6 @@
-# MagpylibGui
+# MagpylibGui  [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master) <a href="https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila/render/00_MagpylibGui_voila.ipynb"><img src="images/voila-logo.svg" width="100" height="50" title="click to launch app with voila on mybinder" alt="voila"></a> 
+ 
  A graphical user interface for the magpylib package in jupyter with ipywidgets
 
-Launch voila:
-<!-- <a href="https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila/render/00_MagpylibGui_voila.ipynb"><img src="https://github.com/voila-dashboards/voila/raw/master/docs/source/voila-logo.svg" width="200" height="100" title="Voila-mybinder hub" alt="click to launch a voila session on mybinder"></a> -->
-
-[![Binder](https://github.com/voila-dashboards/voila/raw/master/docs/source/voila-logo.svg | width=48)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=voila/render/00_MagpylibGui_voila.ipynb)
-
-Launch Jupyter notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master)
-
-
-<!-- Launch Jupyterlab: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alexboiboi/MagpylibGui/master?urlpath=lab)) -->
-
 [](images/example_ui_view.png)
+<img src="images/example_ui_view.png"  alt="ui example for magpylibGui"></a> 
