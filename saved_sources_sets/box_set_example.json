@@ -17,6 +17,7 @@
                     0
                 ]
             },
+            "sensor_size": 4.0,
             "sensor_type": "hall-3d"
         }
     },

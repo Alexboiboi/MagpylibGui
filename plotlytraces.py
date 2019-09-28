@@ -30,7 +30,7 @@ from magpylib._lib.classes.sensor import Sensor
 # +
 
 
-def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, **kwargs):
+def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, sensor_size=10, **kwargs):
     box = go.Mesh3d(
         i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
         j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
@@ -38,8 +38,7 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, **kwargs):
         showscale=False,
         name='box'
     )
-    if 'dim' not in kwargs:
-        dim = (10,10,2)
+    dim = np.array([1,1,0.2])*sensor_size
     dd = 0.8 # shape modifier 
     x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
     y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
@@ -202,7 +201,7 @@ def _getColorscale(cst=0.1):
     return [[0, 'turquoise'], [0.5*(1-cst), 'turquoise'],[0.5*(1+cst), 'magenta'], [1, 'magenta']]
 
 
-def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1):
+def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1, sensor_size=10):
     s = input_obj
     if isinstance(s, Box):
         trace = makeBox(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, cst=cst)
@@ -217,7 +216,7 @@ def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesi
     elif isinstance(s, Dipole):
         trace = makeDipole(moment=s.moment, pos=s.position, angle=s.angle, axis=s.axis, sizeref=dipolesizeref, color=color)
     elif isinstance(s, Sensor):
-        trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, color=color)
+        trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, color=color, sensor_size=sensor_size)
     else:
         trace =  None
     if showhoverdata:
