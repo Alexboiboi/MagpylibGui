@@ -183,7 +183,7 @@ def makeCircular(curr=0.0, dim=1.0, pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 0
         x,y,z = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
         
     circularCurrent = go.Scatter3d(x=x,y=y,z=z,
-                              mode = 'lines', line_width=5, name=f'circular current ({curr:.2f}A)')    
+                              mode = 'lines', line_width=8, name=f'circular current ({curr:.2f}A)')    
     circularCurrent.update(**kwargs)
     return circularCurrent
 
