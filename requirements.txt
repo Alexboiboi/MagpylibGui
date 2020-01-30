@@ -1,5 +1,5 @@
-magpylib>=1.2.1b0
+magpylib>=2.3.0b0
 plotly>=4.5
 ipywidgets>=7.5
-pandas>=0.25.3
+pandas>=1.0.0
 voila>=0.1.20
