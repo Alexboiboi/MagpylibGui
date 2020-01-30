@@ -5,8 +5,8 @@
 #     text_representation:
 #       extension: .py
 #       format_name: light
-#       format_version: '1.4'
-#       jupytext_version: 1.2.1
+#       format_version: '1.5'
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -18,7 +18,7 @@
 import numpy as np
 import magpylib as magpy
 import plotly.graph_objects as go
-from magpylib._lib.mathLibPublic import rotatePosition
+from magpylib._lib.mathLib import angleAxisRotation
 from magpylib._lib.classes.magnets import Box, Cylinder, Sphere
 from magpylib._lib.classes.currents import Line, Circular
 from magpylib._lib.classes.moments import Dipole
@@ -28,9 +28,7 @@ from magpylib._lib.classes.sensor import Sensor
 # # Sources definitions
 
 # +
-
-
-def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, sensorsize=10, **kwargs):
+def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, dim=10, **kwargs):
     box = go.Mesh3d(
         i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
         j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
@@ -38,7 +36,7 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, sensorsize=10, 
         showscale=False,
         name='box'
     )
-    dim = np.array([1,1,0.2])*sensorsize
+    dim = np.array([1,1,0.2])*dim
     dd = 0.8 # shape modifier 
     x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
     y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
@@ -48,7 +46,7 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, sensorsize=10, 
     if color is not None:
         box.color = color
     if angle!=0:
-        points = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+        points = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
     
     box.x , box.y, box.z = points
     box.update(**kwargs)
@@ -74,7 +72,7 @@ def makeBox(mag=(0,0,1),  dim = (10,10,10), pos = (0,0,0), angle=0, axis=(0,0,1)
     elif color is not None:
         box.color = color
     if angle!=0:
-        points = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+        points = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
     
     box.x , box.y, box.z = points
     box.update(**kwargs)
@@ -110,7 +108,7 @@ def makeCylinder(mag=(0,0,1), dim = (5,10,0), pos = (0,0,0), angle=0, axis=(0,0,
         cylinder.colorscale = [[0,color],[1,color]]
     if angle!=0:
         points = np.array([x.flatten(),y.flatten(),z.flatten()])
-        xr,yr,zr = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+        xr,yr,zr = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
         cylinder.update(x=xr.reshape(x.shape), y=yr.reshape(y.shape), z=zr.reshape(z.shape))
     
     cylinder.update(**kwargs)
@@ -136,7 +134,7 @@ def makeSphere(mag=(0,0,1), dim = 5, pos = (0,0,0), angle=0, axis=(0,0,1), cst=F
         sphere.colorscale = [[0,color],[1,color]]
     if angle!=0:
         points = np.array([x.flatten(),y.flatten(),z.flatten()])
-        xr,yr,zr = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+        xr,yr,zr = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
         sphere.update(x=xr.reshape(x.shape), y=yr.reshape(y.shape), z=zr.reshape(z.shape))
     
     sphere.update(**kwargs)
@@ -147,7 +145,7 @@ def makeDipole(moment=(0.0, 0.0, 1), pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 
     moment= np.array(moment)/np.linalg.norm(moment)
     
     if angle!=0:
-        moment = rotatePosition(moment, angle, axis, anchor=pos)
+        moment = angleAxisRotation(moment, angle, axis, anchor=pos)
      
     u,v,w = [[m] for m in moment]
     dipole = go.Cone(x=x,y=y,z=z, u=u,v=v,w=w, sizeref = sizeref, name=f'dipole ({moment})mT/mm^3', sizemode = 'absolute', showscale=False)    
@@ -160,7 +158,7 @@ def makeLine(curr=0.0, vertices=[(-1.0, 0.0, 0.0),(1.0,0.0,0.0)], pos=(0.0, 0.0,
     points = np.array([x,y,z])
     
     if angle!=0:
-        x,y,z = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+        x,y,z = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
         
     lineCurrent = go.Scatter3d(x=x,y=y,z=z,
                               mode = 'lines', line_width=5, name=f'line current ({curr:.2f}A)')    
@@ -176,7 +174,7 @@ def makeCircular(curr=0.0, dim=1.0, pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 0
     points = np.array([x,y,z])
     
     if angle!=0:
-        x,y,z = np.array([rotatePosition(p, angle, axis, anchor=pos) for p in points.T]).T
+        x,y,z = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
         
     circularCurrent = go.Scatter3d(x=x,y=y,z=z,
                               mode = 'lines', line_width=8, name=f'circular current ({curr:.2f}A)')    
@@ -186,36 +184,47 @@ def makeCircular(curr=0.0, dim=1.0, pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 0
 
 def _getIntensity(points, mag, pos):
     '''points: [x,y,z] array'''
-    p = np.array(points)
-    pos = np.array(pos)
-    m = np.array(mag) /   np.linalg.norm(mag)
-    a = ((p[0]-pos[0])*m[0] + (p[1]-pos[1])*m[1] + (p[2]-pos[2])*m[2])
-    b = (p[0]-pos[0])**2 + (p[1]-pos[1])**2 + (p[2]-pos[2])**2
-    return a /   np.sqrt(b)
+    if sum(mag)!=0:
+        p = np.array(points)
+        pos = np.array(pos)
+        m = np.array(mag) /   np.linalg.norm(mag)
+        a = ((p[0]-pos[0])*m[0] + (p[1]-pos[1])*m[1] + (p[2]-pos[2])*m[2])
+        b = (p[0]-pos[0])**2 + (p[1]-pos[1])**2 + (p[2]-pos[2])**2
+        return a /   np.sqrt(b)
+    else:
+        return points*0
 
 def _getColorscale(cst=0.1):
     return [[0, 'turquoise'], [0.5*(1-cst), 'turquoise'],[0.5*(1+cst), 'magenta'], [1, 'magenta']]
 
 
-def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1, sensorsize=10):
+def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1, opacity=1, showlegend=True, **kwargs):
     s = input_obj
+    kwargs['showlegend'] = showlegend
     if isinstance(s, Box):
-        trace = makeBox(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, cst=cst)
+        trace = makeBox(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, cst=cst, opacity=opacity, **kwargs)
     elif isinstance(s, Cylinder):
-        trace = makeCylinder(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
+        trace = makeCylinder(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst, opacity=opacity, **kwargs)
     elif isinstance(s, Sphere):
-        trace = makeSphere(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst)
+        trace = makeSphere(mag=s.magnetization, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, color=color, N=Nver, cst=cst, opacity=opacity, **kwargs)
     elif isinstance(s, Line):
-        trace = makeLine(curr=s.current, vertices=s.vertices, pos=s.position, angle=s.angle, axis=s.axis, color=color)
+        trace = makeLine(curr=s.current, vertices=s.vertices, pos=s.position, angle=s.angle, axis=s.axis, color=color, opacity=opacity, **kwargs)
     elif isinstance(s, Circular):
-        trace = makeCircular(curr=s.current, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, N=Nver, color=color)
+        trace = makeCircular(curr=s.current, dim=s.dimension, pos=s.position, angle=s.angle, axis=s.axis, N=Nver, color=color, opacity=opacity, **kwargs)
     elif isinstance(s, Dipole):
-        trace = makeDipole(moment=s.moment, pos=s.position, angle=s.angle, axis=s.axis, sizeref=dipolesizeref, color=color)
+        trace = makeDipole(moment=s.moment, pos=s.position, angle=s.angle, axis=s.axis, sizeref=dipolesizeref, color=color, opacity=opacity, **kwargs)
     elif isinstance(s, Sensor):
-        trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, color=color, sensorsize=sensorsize)
+        if hasattr(s,'dimension'):
+            sensorsize = s.dimension
+        else:
+            sensorsize=10
+        trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, dim=sensorsize, color=color, opacity=opacity, **kwargs)
     else:
         trace =  None
     if showhoverdata and trace is not None:
         trace.hoverinfo = 'text'
         trace.text = str(s).replace('\n', '<br>')
     return trace
+# -
+
+
