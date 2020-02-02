@@ -1,11 +1,11 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:light
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
+#       format_name: percent
+#       format_version: '1.3'
 #       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
@@ -13,8 +13,7 @@
 #     name: python3
 # ---
 
-# # Imports
-
+# %%
 import numpy as np
 import magpylib as magpy
 import plotly.graph_objects as go
@@ -25,16 +24,18 @@ from magpylib._lib.classes.moments import Dipole
 from magpylib._lib.classes.sensor import Sensor
 
 
+# %% [markdown]
 # # Sources definitions
+#
 
-# +
+# %%
 def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), color=None, dim=10, **kwargs):
     box = go.Mesh3d(
         i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
         j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
         k = np.array([0, 7, 2, 3, 6, 7, 1, 2, 5, 5, 7, 6]),
         showscale=False,
-        name='box'
+        name='sensor'
     )
     dim = np.array([1,1,0.2])*dim
     dd = 0.8 # shape modifier 
@@ -182,6 +183,10 @@ def makeCircular(curr=0.0, dim=1.0, pos=(0.0, 0.0, 0.0), angle=0.0, axis=(0.0, 0
     return circularCurrent
 
 
+# %% [markdown]
+# # Color functions
+
+# %%
 def _getIntensity(points, mag, pos):
     '''points: [x,y,z] array'''
     if sum(mag)!=0:
@@ -198,6 +203,10 @@ def _getColorscale(cst=0.1):
     return [[0, 'turquoise'], [0.5*(1-cst), 'turquoise'],[0.5*(1+cst), 'magenta'], [1, 'magenta']]
 
 
+# %% [markdown]
+# # Get Trace function
+
+# %%
 def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1, opacity=1, showlegend=True, **kwargs):
     s = input_obj
     kwargs['showlegend'] = showlegend
@@ -225,6 +234,3 @@ def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesi
         trace.hoverinfo = 'text'
         trace.text = str(s).replace('\n', '<br>')
     return trace
-# -
-
-
