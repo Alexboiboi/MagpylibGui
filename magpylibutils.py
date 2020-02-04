@@ -15,31 +15,49 @@
 
 # %%
 import numpy as np
+import pandas as pd
 from scipy.interpolate import RegularGridInterpolator
 from magpylib._lib.mathLib import angleAxisRotation
 from magpylib._lib.classes.magnets import Box
 from magpylib._lib.classes.sensor import Sensor
+from pathlib import Path
 
 
 # %%
 class DiscreteSourceBox(Box):
-    def __init__(self, data, bounds_error=None, fill_value=None):
-        '''bounds_error : bool, optional
+    def __init__(self, data, bounds_error=None, fill_value=None, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
+        '''
+        data : csv file, pandas dataframe, or numpy array
+            !!! IMPORTANT !!! columns value must be in this order: x,y,z,Bx,By,Bz
+        bounds_error : bool, optional
             If True, when interpolated values are requested outside of the domain of the input data, a ValueError is raised. If False, then fill_value is used.
         fill_value : number, optional
             If provided, the value to use for points outside of the interpolation domain. If None, values outside the domain are extrapolated.
         '''
-        m = np.min(data,axis=0)
-        M = np.max(data,axis=0)
+        
+        try:
+            Path(data).is_file()
+            df = pd.read_csv(data)
+        except:
+            if isinstance(data, pd.DataFrame):
+                df = data
+            else:
+                df = pd.DataFrame(data, columns=['x','y','z','Bx','By','Bz'])
+                
+        df = df.sort_values(['x','y','z'])    
+        m = np.min(df.values,axis=0)
+        M = np.max(df.values,axis=0)
         self.dimension = (M-m)[:3]
         self._center = 0.5*(M+m)[:3]
-        self.position = self._center
+        self.position = self._center + np.array(pos)
+        self.position = self._center + np.array(pos)
         self.magnetization = (0,0,0)
-        self.angle = 0
-        self.axis = (0,0,1)
-        self.interpFunc = self._interpolate_data(data, bounds_error=bounds_error, fill_value=fill_value)
-        self.data = data
-    
+        self.angle = angle
+        self.axis = axis
+        self.interpFunc = self._interpolate_data(df, bounds_error=bounds_error, fill_value=fill_value)
+        self.data_downsampled = self.get_downsampled_array(df, N=5)
+        self.dataframe = df
+        
     def getB(self, pos):
         pos += self._center - self.position
         B = self.interpFunc(pos)
@@ -49,8 +67,11 @@ class DiscreteSourceBox(Box):
             return B[0] if B.shape[0] == 1 else B
     
     def _interpolate_data(self, data, bounds_error, fill_value):
-        '''Define interpolating functions for B field values, values need to be sorted in x,y,z order'''
-        x,y,z,Bx,By,Bz = data.T
+        '''data: pandas dataframe
+            x,y,z,Bx,By,Bz dataframe sorted by (x,y,z)
+        returns: 
+            interpolating function for B field values'''
+        x,y,z,Bx,By,Bz = data.values.T
         nx,ny,nz = len(np.unique(x)), len(np.unique(y)), len(np.unique(z))
         X = np.linspace(np.min(x), np.max(x), nx)
         Y = np.linspace(np.min(y), np.max(y), ny)
@@ -60,6 +81,29 @@ class DiscreteSourceBox(Box):
         BZ_interp = RegularGridInterpolator((X,Y,Z), Bz.reshape(nx,ny,nz), bounds_error=bounds_error, fill_value=fill_value)
         return lambda x: np.array([BX_interp(x),BY_interp(x),BZ_interp(x)]).T
     
+    def get_downsampled_array(self, df, N=5):
+        '''
+        df : pandas dataframe 
+            x,y,z,Bx,By,Bz dataframe sorted by (x,y,z)
+        N : integer
+            number of points per dimensions left after downsampling, 
+            min=2 if max>len(dim) max=len(dim)
+        returns:
+            downsampled numpy array'''
+        df=df.copy()
+        l = df.shape[0]
+        df['Bmag'] =( df['Bx']**2 + df['By']**2 + df['Bz']**2)**0.5
+        masks=[]
+        N=1 if N<1 else N
+        for i,k in enumerate(['x','y', 'z']):
+            u = df[k].unique()
+            dsf = int(len(u)/N) 
+            if dsf<1:
+                dsf = 1
+            masks.append(df[k].isin(u[::dsf]))
+        dfm = df[masks[0]&masks[1]&masks[2]]
+        data = dfm[['x','y','z','Bmag']].values
+        return data
 
 
 # %%
