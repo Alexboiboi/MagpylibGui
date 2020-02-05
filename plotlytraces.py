@@ -28,6 +28,11 @@ from magpylib._lib.classes.collection import Collection
 
 from magpylibutils import DiscreteSourceBox, SensorCollection
 
+# Defaults
+SENSORSIZE = 5
+DIPOLESIZEREF = 5
+DISCRETESOURCE_OPACITY = 0.5
+
 
 # %% [markdown]
 # # Sources definitions
@@ -56,7 +61,7 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=5, showlegend=True, **k
     box.update(**kwargs)
     return box
 
-def makeDiscreteBox(data, pos = (0,0,0), angle=0, axis=(0,0,1), opacity=0.5, showlegend=True, **kwargs):
+def makeDiscreteBox(data, pos = (0,0,0), angle=0, axis=(0,0,1), opacity=DISCRETESOURCE_OPACITY, showlegend=True, **kwargs):
     '''data: numpy array data.T[0:2] -> x,y,z
                          data.T[3] -> Bmag'''
     x,y,z,Bmag = data.T
@@ -259,7 +264,7 @@ def _getColorscale(cst=0.1):
 # # Get Trace function
 
 # %%
-def getTraces(*input_objs, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1, opacity='default', showlegend=True, **kwargs):
+def getTraces(*input_objs, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=DIPOLESIZEREF, opacity='default', showlegend=True, sensorsize=SENSORSIZE, **kwargs):
     traces=[]
     for s in input_objs:
         if isinstance(s, (tuple, list, Collection, SensorCollection)):
@@ -275,7 +280,7 @@ def getTraces(*input_objs, cst=0, color=None, Nver=40, showhoverdata=True, dipol
             traces.append(trace)
     return traces
 
-def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=1, opacity='default', showlegend=True, **kwargs):
+def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=DIPOLESIZEREF, opacity='default', showlegend=True, sensorsize=SENSORSIZE, **kwargs):
     s = input_obj
     kwargs['showlegend'] = showlegend
     kwargs['color'] = color
@@ -284,7 +289,7 @@ def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesi
     except:
         pass
     if opacity == 'default':
-        opacity = 0.5 if isinstance(s, DiscreteSourceBox) else 1
+        opacity = DISCRETESOURCE_OPACITY if isinstance(s, DiscreteSourceBox) else 1
     if isinstance(s, Box):
         if isinstance(s, DiscreteSourceBox):
             kwargs.pop('color')
@@ -330,7 +335,7 @@ def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesi
         if hasattr(s,'dimension'):
             sensorsize = s.dimension
         else:
-            sensorsize=10
+            pass
         trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, 
                            dim=sensorsize, 
                            opacity=opacity, 
@@ -348,19 +353,30 @@ def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesi
     
     return trace
 
+def displaySystem(*objs, figwidget=False, **kwargs):
+    fig = go.Figure()
+    fig.layout.scene.aspectmode = 'data'
+    fig.add_traces(getTraces(*objs, **kwargs))
+    if figwidget:
+        return go.FigureWidget(fig)
+    else:
+        fig.show()
+    
+
 # %% [markdown]
 # # Testing
 
 # %% [raw]
-# fig = go.FigureWidget()
 # box = Box(mag=(1,0,1), dim=(12, 10 ,12), pos=(0,0,0))
 # cylinder = Cylinder(mag=(0,1,0), dim=(13, 7), pos=(15,0,0))
 # sphere = Sphere(mag=(1,1,1), dim=11, pos=(30,0,0))
 # line = Line(curr=10, vertices=[(0,-4,0),(0,4,0)], axis=(1,0,0), angle=90, pos=(0,0,15))
 # circular = Circular(curr=-5, dim=10,  pos=(10,0,15), axis=(1,0,0), angle=90)
-# dipole = Dipole(moment=(10,1,1), pos=(20,0,15))
-# discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(30,0,15))
+# dipole = Dipole(moment=(10,1,1), pos=(18,0,15))
+# discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(25,0,15))
 # coll = Collection(box,cylinder,sphere, line, circular, dipole, discrete_source)
 #
-# fig.layout.scene.aspectmode = 'data'
-# fig.add_traces(getTraces(coll, cst=0.2))
+# sensor = Sensor(pos=(35,0,15))
+#
+#
+# displaySystem(coll, sensor, cst=0.2, sensorsize=5, dipolesizeref=5)
