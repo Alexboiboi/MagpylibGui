@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.3.3
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -201,8 +201,6 @@ class SensorCollection:
         col.removeSource(sens)
         return col
 
-        
-        col = Collection(self.sources)
 
     def __repr__(self):
         return "\n".join([repr(s) for s in self.sensors])
@@ -214,9 +212,58 @@ class SensorCollection:
     def __getitem__(self, i):
         return self.sensors[i]
 
+
+# %% [markdown]
+# # Surface Sensor
+
+# %%
+class SurfaceSensor:
+    def __init__(self, N=(2,3), dim=(0.2,0.3), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
+        self.position = pos
+        self.angle = angle
+        self.axis = axis
+        pos_x = np.linspace(-dim[0]/2, dim[0]/2, N[0])
+        pos_y = np.linspace(-dim[1]/2, dim[1]/2, N[1])
+        self.sens_arr=[]
+        for nx in pos_x:
+            for ny in pos_y:
+                s = Sensor(pos=(nx,ny,0), angle=0, axis=(0,0,1))
+                s.rotate(angle=angle, axis=axis, anchor=(0,0,0))
+                s.move(pos)
+                self.sens_arr.append(s)
+
+    def rotate(self, angle=0, axis=(0,0,1), anchor='self.postion'):
+        if anchor == 'self.postion':
+            anchor = self.position
+        for s in self.sens_arr:
+            s.rotate(angle=angle, axis=axis, anchor=anchor)
+            
+    def move(self, displacement):
+        for s in self.sens_arr:
+            s.move(displacement)
+        
+    def getPosAngAx(self):
+        paa=[]
+        for s in self.sens_arr:
+            paa.append([np.array(s.position), s.angle, np.array(s.axis)])
+        return np.array(paa)
+    
+    def getB(self, *sources):
+        return np.array([s.getB(*sources) for s in self.sens_arr]).mean(axis=0)
+    
+    @property
+    def fig(self):
+        import plotly.graph_objects as go
+        x,y,z = np.array([s.position for s in self.sens_arr]).T
+        fig=go.Figure()
+        fig.add_scatter3d(x=x,y=y,z=z, mode='markers')
+        return fig
+
 # %% [markdown]
 # # Testing
 
 # %% [raw]
-# discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(25,0,15))
-# discrete_source
+# ds = DiscreteSourceBox('data/discrete_source_data.csv')
+# s = Sensor()
+# ss = SurfaceSensor(dim=(0.2,0.3))
+# s.getB(ds), ss.getB(ds)
