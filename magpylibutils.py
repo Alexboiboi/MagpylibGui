@@ -23,6 +23,9 @@ from magpylib._lib.classes.sensor import Sensor
 from pathlib import Path
 
 
+# %% [markdown]
+# # Discrete Source Box
+
 # %%
 class DiscreteSourceBox(Box):
     def __init__(self, data, bounds_error=None, fill_value=None, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
@@ -104,7 +107,18 @@ class DiscreteSourceBox(Box):
         dfm = df[masks[0]&masks[1]&masks[2]]
         data = dfm[['x','y','z','Bmag']].values
         return data
+    
+    def __repr__(self):
+        return "DiscreteSourceBox\n" + \
+                "dimensions: a={:.2f}mm, b={:.2f}mm, c={:.2f}mm\n".format(*self.dimension) + \
+                "position: x={:.2f}mm, y={:.2f}mm, z={:.2f}mm\n".format(*self.position,) + \
+                "angle: {:.2f} Degrees\n".format(self.angle) + \
+                "axis: x={:.2f}, y={:.2f}, z={:.2f}".format(*self.axis)
 
+
+
+# %% [markdown]
+# # Sensor Collection
 
 # %%
 class SensorCollection:
@@ -191,7 +205,7 @@ class SensorCollection:
         col = Collection(self.sources)
 
     def __repr__(self):
-        return "\n".join([str(type(s)) for s in self.sensors])
+        return "\n".join([repr(s) for s in self.sensors])
 
     def __iter__(self):
         for s in self.sensors:
@@ -199,3 +213,10 @@ class SensorCollection:
 
     def __getitem__(self, i):
         return self.sensors[i]
+
+# %% [markdown]
+# # Testing
+
+# %% [raw]
+# discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(25,0,15))
+# discrete_source

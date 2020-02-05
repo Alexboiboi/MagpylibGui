@@ -361,7 +361,7 @@ def displaySystem(*objs, figwidget=False, **kwargs):
         return go.FigureWidget(fig)
     else:
         fig.show()
-    
+
 
 # %% [markdown]
 # # Testing
