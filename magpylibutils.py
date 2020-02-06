@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.3
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import RegularGridInterpolator
 from magpylib._lib.mathLib import angleAxisRotation
+from magpylib._lib.classes.base import RCS
 from magpylib._lib.classes.magnets import Box
 from magpylib._lib.classes.sensor import Sensor
 from pathlib import Path
@@ -121,27 +122,46 @@ class DiscreteSourceBox(Box):
 # # Sensor Collection
 
 # %%
-class SensorCollection:
-    def __init__(self, *sensors):
+class SensorCollection(RCS):
+    def __init__(self, *sensors, pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
+        super().__init__(position=pos, angle=angle, axis=axis)
         self.sensors = []
         self.addSensor(*sensors)
+
+    def __repr__(self):
+        return f"SensorCollection"\
+               f"\n sensor children: N={len(self.sensors)}"\
+               f"\n position x: {self.position[0]:.2f} mm  n y: {self.position[1]:.2f}mm z: {self.position[2]:.2f}mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]} z: {self.axis[2]}"
+
+    def __iter__(self):
+        for s in self.sensors:
+            yield s
+
+    def __getitem__(self, i):
+        return self.sensors[i]
             
     def addSensor(self, *sensors):
         for s in sensors:
-            if isinstance(s,Sensor) and s not in self.sensors:
+            if isinstance(s,(Sensor,SurfaceSensor)) and s not in self.sensors:
                 self.sensors.append(s)
             elif isinstance(s, SensorCollection):
                 self.addSensor(*s.sensors)
         
     def removeSensor(self, *sensors):
         for s in sensors:
-            if isinstance(s,Sensor) and s in self.sensors:
+            if isinstance(s,(Sensor,SurfaceSensor)) and s in self.sensors:
                 self.sensors.remove(s)
             elif isinstance(s, SensorCollection):
                 self.removeSensor(*s.sensors)
                 
-    def getB(self, *sources):
-        return np.array([s.getB(*sources) for s in self.sensors])
+    def getB(self, *sources, mean=False):
+        B = np.array([s.getB(*sources) for s in self.sensors])
+        if mean:
+            return B.mean(axis=0)
+        else:
+            return B
             
     def getPositions(self):
         pos=[]
@@ -166,19 +186,14 @@ class SensorCollection:
         for s in self.sensors:
             paa.append([np.array(s.position), s.angle, np.array(s.axis)])
         return np.array(paa)
-        
+    
     def move(self, displacement):
+        super().move(displacement)
         for s in self.sensors:
             s.move(displacement)
-    
-    @property
-    def position(self):
-        '''returns the barycenter of the collection items positions'''
-        return np.mean([s.position for s in self.sensors],axis=0)
-    
-    def rotate(self, angle, axis, anchor='barycenter'):
-        if anchor=='barycenter':
-            anchor = self.position
+            
+    def rotate(self, angle, axis, anchor='self.position'):
+        super().rotate(angle=angle, axis=axis, anchor=anchor)
         for s in self.sensors:
             s.rotate(angle, axis, anchor=anchor)
             
@@ -202,8 +217,19 @@ class SensorCollection:
         return col
 
 
+# %%
+class SensorCollection(RCS):
+    def __init__(self, *sensors, pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
+        super().__init__(position=pos, angle=angle, axis=axis)
+        self.sensors = []
+        self.addSensor(*sensors)
+
     def __repr__(self):
-        return "\n".join([repr(s) for s in self.sensors])
+        return f"SensorCollection"\
+               f"\n sensor children: N={len(self.sensors)}"\
+               f"\n position x: {self.position[0]:.2f} mm  n y: {self.position[1]:.2f}mm z: {self.position[2]:.2f}mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]} z: {self.axis[2]}"
 
     def __iter__(self):
         for s in self.sensors:
@@ -211,53 +237,151 @@ class SensorCollection:
 
     def __getitem__(self, i):
         return self.sensors[i]
+            
+    def addSensor(self, *sensors):
+        for s in sensors:
+            if isinstance(s,(Sensor,SurfaceSensor)) and s not in self.sensors:
+                self.sensors.append(s)
+            elif isinstance(s, SensorCollection):
+                self.addSensor(*s.sensors)
+        
+    def removeSensor(self, *sensors):
+        for s in sensors:
+            if isinstance(s,(Sensor,SurfaceSensor)) and s in self.sensors:
+                self.sensors.remove(s)
+            elif isinstance(s, SensorCollection):
+                self.removeSensor(*s.sensors)
+                
+    def getB(self, *sources, mean=False):
+        B = np.array([s.getB(*sources) for s in self.sensors])
+        if mean:
+            return B.mean(axis=0)
+        else:
+            return B
+        
+    def getPositions(self):
+        pos=[]
+        for s in self.sensors:
+            pos.append(s.position)
+        return np.array(pos)
+    
+    def getAngles(self):
+        ang=[]
+        for s in self.sensors:
+            ang.append(s.angle)
+        return np.array(ang)
+    
+    def getAxis(self):
+        ax=[]
+        for s in self.sensors:
+            ax.append(s.axis)
+        return np.array(ax)
+    
+    def getPosAngAx(self):
+        paa=[]
+        for s in self.sensors:
+            paa.append([np.array(s.position), s.angle, np.array(s.axis)])
+        return np.array(paa)
+    
+    def move(self, displacement):
+        super().move(displacement)
+        for s in self.sensors:
+            s.move(displacement)
+            
+    def rotate(self, angle, axis, anchor='self.position'):
+        super().rotate(angle=angle, axis=axis, anchor=anchor)
+        for s in self.sensors:
+            s.rotate(angle, axis, anchor=anchor)
+            
+    def __add__(self, other):
+        assert isinstance(other, (SensorCollection, Sensor)) , str(other) +  ' item must be a SensorCollection or a sensor'
+        if not isinstance(other, (SensorCollection)):
+            sens = [other]
+        else:
+            sens = other.sensors
+        return SensorCollection(self.sensors + sens)
+
+    def __sub__(self, other):
+        assert isinstance(other, (SensorCollection, Sensor)) , str(other) +  ' item must be a SensorCollection or a sensor'
+        if not isinstance(other, (SensorCollection)):
+            sens = [other]
+        else:
+            sens = other.sensors
+            
+        col = SensorCollection(self.sensors)
+        col.removeSource(sens)
+        return col
 
 
 # %% [markdown]
 # # Surface Sensor
 
 # %%
-class SurfaceSensor:
+class SurfaceSensor(SensorCollection):
     def __init__(self, N=(2,3), dim=(0.2,0.3), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
-        self.position = pos
-        self.angle = angle
-        self.axis = axis
-        pos_x = np.linspace(-dim[0]/2, dim[0]/2, N[0])
-        pos_y = np.linspace(-dim[1]/2, dim[1]/2, N[1])
-        self.sens_arr=[]
-        for nx in pos_x:
-            for ny in pos_y:
+        self.dimension = dim
+        self.Nx = N[0]
+        self.Ny = N[1]
+        self.pos_x = np.linspace(-dim[0]/2, dim[0]/2, N[0])
+        self.pos_y = np.linspace(-dim[1]/2, dim[1]/2, N[1])
+        sensors=[]
+        for nx in self.pos_x:
+            for ny in self.pos_y:
                 s = Sensor(pos=(nx,ny,0), angle=0, axis=(0,0,1))
                 s.rotate(angle=angle, axis=axis, anchor=(0,0,0))
                 s.move(pos)
-                self.sens_arr.append(s)
-
-    def rotate(self, angle=0, axis=(0,0,1), anchor='self.postion'):
-        if anchor == 'self.postion':
-            anchor = self.position
-        for s in self.sens_arr:
-            s.rotate(angle=angle, axis=axis, anchor=anchor)
-            
-    def move(self, displacement):
-        for s in self.sens_arr:
-            s.move(displacement)
+                sensors.append(s)
+        super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
+    
+    def setPosition(self, newpos):
+        for s in self.sensors:
+            s.move(newpos - self.position)
         
-    def getPosAngAx(self):
-        paa=[]
-        for s in self.sens_arr:
-            paa.append([np.array(s.position), s.angle, np.array(s.axis)])
-        return np.array(paa)
+    def getB(self, *sources, mean=True):
+        return super().getB(*sources, mean=mean)
     
-    def getB(self, *sources):
-        return np.array([s.getB(*sources) for s in self.sens_arr]).mean(axis=0)
+    def __repr__(self):
+        return f"name: SurfaceSensor"\
+               f"\n surface elements: Nx={self.Nx}, Ny={self.Ny}"\
+               f"\n dimension x: {self.dimension[0]:.2f} mm  n y: {self.dimension[1]:.2f}mm"\
+               f"\n position x: {self.position[0]:.2f} mm  n y: {self.position[1]:.2f}mm z: {self.position[2]:.2f}mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]} z: {self.axis[2]}"
+
+
+# %% [markdown]
+# # Circular Sensor Array
+
+# %%
+class CircularSensorArray(SensorCollection):
+    def __init__(self, Rs=1, elem_dim=(0.2,0.2), num_of_sensors=4, start_angle=0, surface_sensor=False):
+        self.start_angle = start_angle
+        self.elem_dim = elem_dim
+        if surface_sensor:
+            S = [SurfaceSensor(pos=(i,0,0), dim=elem_dim) for i in range(num_of_sensors)]
+        else:
+            S = [Sensor(pos=(i,0,0)) for i in range(num_of_sensors)]
+        super().__init__(*S)
+        self.setSensorsDim(elem_dim)
+        self.initialize(Rs)
     
-    @property
-    def fig(self):
-        import plotly.graph_objects as go
-        x,y,z = np.array([s.position for s in self.sens_arr]).T
-        fig=go.Figure()
-        fig.add_scatter3d(x=x,y=y,z=z, mode='markers')
-        return fig
+    def initialize(self, Rs, start_angle='default', elem_dim='default'):
+        if start_angle == 'default':
+            start_angle= self.start_angle
+        if elem_dim == 'default':
+            elem_dim= self.elem_dim
+        theta = np.deg2rad(np.linspace(start_angle, start_angle+360, len(self.sensors)+1))[:-1]
+        for s,t in zip(self.sensors,theta):
+            s.setPosition((Rs*np.cos(t), Rs*np.sin(t),0))
+            s.angle=0
+            s.axis=(0,0,1)
+            s.dimension = elem_dim
+            
+    
+    def setSensorsDim(self, elem_dim):
+        assert all(i >= 0 for i in elem_dim)>0, 'dim must be positive'
+        for s in self.sensors:
+            s.dimension = elem_dim
 
 # %% [markdown]
 # # Testing
@@ -265,5 +389,7 @@ class SurfaceSensor:
 # %% [raw]
 # ds = DiscreteSourceBox('data/discrete_source_data.csv')
 # s = Sensor()
-# ss = SurfaceSensor(dim=(0.2,0.3))
-# s.getB(ds), ss.getB(ds)
+# ss = SurfaceSensor()
+# #s.getB(ds), ss.getB(ds)
+
+# %%

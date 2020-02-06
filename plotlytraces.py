@@ -26,10 +26,10 @@ from magpylib._lib.classes.moments import Dipole
 from magpylib._lib.classes.sensor import Sensor
 from magpylib._lib.classes.collection import Collection
 
-from magpylibutils import DiscreteSourceBox, SensorCollection
+from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor
 
 # Defaults
-SENSORSIZE = 5
+SENSORSIZE = (5,5)
 DIPOLESIZEREF = 5
 DISCRETESOURCE_OPACITY = 0.5
 
@@ -39,15 +39,36 @@ DISCRETESOURCE_OPACITY = 0.5
 #
 
 # %%
-def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=5, showlegend=True, **kwargs):
+def make_SurfaceSensor(surfsens, sensorsources=None, sensoraxis='z', **kwargs):
+    '''
+    sensorsources: iterable of magpylib sources
+        in order to make the surface plot the Bfield values need to be retrieved for the corresponding sources
+    sensoraxis: string
+        one of "x", "y", "z" corresponding to the relative coordinate system of the sensor array
+    '''
+    try:
+        kwargs.pop('color')
+    except:
+        pass
+    if sensorsources is None:
+        sensorsources=[]
+    x,y,z = np.array([s.position for s in surfsens.sensors]).T.reshape(3, surfsens.Nx, surfsens.Ny)
+    B = surfsens.getB(*sensorsources, mean=False).reshape(surfsens.Nx, surfsens.Ny, 3)
+    surfacecolor = B[:,:,['x','y','z'].index(sensoraxis)]
+    trace = go.Surface(x=x,y=y,z=z, surfacecolor=surfacecolor,
+                       name='surface sensor')
+    trace.update(**kwargs)
+    return trace
+
+def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=(5,5), showlegend=True, **kwargs):
     box = go.Mesh3d(
         i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
         j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
         k = np.array([0, 7, 2, 3, 6, 7, 1, 2, 5, 5, 7, 6]),
         showscale=False, showlegend=showlegend,
-        name='sensor'
+        name='3d sensor'
     )
-    dim = np.array([1,1,0.2])*dim
+    dim = np.array([dim[0],dim[1],0.2])
     dd = 0.8 # shape modifier 
     x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
     y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
@@ -264,23 +285,23 @@ def _getColorscale(cst=0.1):
 # # Get Trace function
 
 # %%
-def getTraces(*input_objs, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=DIPOLESIZEREF, opacity='default', showlegend=True, sensorsize=SENSORSIZE, **kwargs):
+def getTraces(*input_objs, sensorsources=None, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=DIPOLESIZEREF, opacity='default', showlegend=True, sensorsize=SENSORSIZE, sensoraxis='z', **kwargs):
     traces=[]
     for s in input_objs:
-        if isinstance(s, (tuple, list, Collection, SensorCollection)):
+        if isinstance(s, (tuple, list, Collection, SensorCollection)) and not isinstance(s, SurfaceSensor):
             parent = s.sources if isinstance(s, Collection) else s
-            tcs = getTraces(*parent, cst=cst, color=color, Nver=Nver, 
+            tcs = getTraces(*parent, sensorsources=sensorsources, cst=cst, color=color, Nver=Nver, 
                             showhoverdata=showhoverdata, dipolesizeref=dipolesizeref, 
                             opacity=opacity, showlegend=showlegend, **kwargs)
             traces.extend(tcs)
         else:
-            trace = getTrace(s,cst=cst, color=color, Nver=Nver, 
+            trace = getTrace(s, sensorsources=sensorsources, cst=cst, color=color, Nver=Nver, 
                           showhoverdata=showhoverdata, dipolesizeref=dipolesizeref, 
                           opacity=opacity, showlegend=showlegend, **kwargs)
             traces.append(trace)
     return traces
 
-def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=DIPOLESIZEREF, opacity='default', showlegend=True, sensorsize=SENSORSIZE, **kwargs):
+def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40, showhoverdata=True, dipolesizeref=DIPOLESIZEREF, opacity='default', showlegend=True, sensorsize=SENSORSIZE, sensoraxis='z', **kwargs):
     s = input_obj
     kwargs['showlegend'] = showlegend
     kwargs['color'] = color
@@ -340,6 +361,8 @@ def getTrace(input_obj, cst=0, color=None, Nver=40, showhoverdata=True, dipolesi
                            dim=sensorsize, 
                            opacity=opacity, 
                            **kwargs)
+    elif isinstance(s, SurfaceSensor):
+        trace = make_SurfaceSensor(s, sensorsources=sensorsources, sensoraxis=sensoraxis, showscale=False, **kwargs)
     else:
         trace =  None
     
@@ -370,13 +393,18 @@ def displaySystem(*objs, figwidget=False, **kwargs):
 # box = Box(mag=(1,0,1), dim=(12, 10 ,12), pos=(0,0,0))
 # cylinder = Cylinder(mag=(0,1,0), dim=(13, 7), pos=(15,0,0))
 # sphere = Sphere(mag=(1,1,1), dim=11, pos=(30,0,0))
-# line = Line(curr=10, vertices=[(0,-4,0),(0,4,0)], axis=(1,0,0), angle=90, pos=(0,0,15))
+# line = Line(curr=10, vertices=[(0,-4,0),(0,4,0)], axis=(1,0,0), angle= 45, pos=(0,0,15))
 # circular = Circular(curr=-5, dim=10,  pos=(10,0,15), axis=(1,0,0), angle=90)
 # dipole = Dipole(moment=(10,1,1), pos=(18,0,15))
 # discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(25,0,15))
 # coll = Collection(box,cylinder,sphere, line, circular, dipole, discrete_source)
 #
 # sensor = Sensor(pos=(35,0,15))
-#
-#
-# displaySystem(coll, sensor, cst=0.2, sensorsize=5, dipolesizeref=5)
+# surfsens = SurfaceSensor(N=(20,20), dim=(8,8), pos=(0,0,15), angle=135, axis=(1,0,0))
+# scoll = SensorCollection(sensor, surfsens)
+# surfsens.setPosition(newpos=(1,2,3))
+# displaySystem(coll, sensor, surfsens, cst=0.2, sensorsources=[line], sensoraxis='x')
+
+# %%
+
+# %%
