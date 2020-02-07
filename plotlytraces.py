@@ -26,6 +26,7 @@ from magpylib._lib.classes.moments import Dipole
 from magpylib._lib.classes.sensor import Sensor
 from magpylib._lib.classes.collection import Collection
 
+import magpylibutils
 from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor
 
 # Defaults
@@ -52,8 +53,8 @@ def make_SurfaceSensor(surfsens, sensorsources=None, sensoraxis='z', **kwargs):
         pass
     if sensorsources is None:
         sensorsources=[]
-    x,y,z = np.array([s.position for s in surfsens.sensors]).T.reshape(3, surfsens.Nx, surfsens.Ny)
-    B = surfsens.getB(*sensorsources, mean=False).reshape(surfsens.Nx, surfsens.Ny, 3)
+    x,y,z = surfsens.positions.T.reshape(3, *surfsens.Nelem)
+    B = surfsens.getBarray(*sensorsources).reshape(*surfsens.Nelem, 3)
     surfacecolor = B[:,:,['x','y','z'].index(sensoraxis)]
     trace = go.Surface(x=x,y=y,z=z, surfacecolor=surfacecolor,
                        name='surface sensor')
@@ -376,10 +377,15 @@ def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40, showhove
     
     return trace
 
-def displaySystem(*objs, figwidget=False, **kwargs):
+def displaySystem(*objs, figwidget=False, traces_properties=None, fig_layout=None):
+    if traces_properties is None:
+        traces_properties = {}
+    if fig_layout is None:
+        fig_layout = {}
     fig = go.Figure()
     fig.layout.scene.aspectmode = 'data'
-    fig.add_traces(getTraces(*objs, **kwargs))
+    fig.add_traces(getTraces(*objs, **traces_properties))
+    fig.update_layout(**fig_layout)
     if figwidget:
         return go.FigureWidget(fig)
     else:
@@ -400,11 +406,35 @@ def displaySystem(*objs, figwidget=False, **kwargs):
 # coll = Collection(box,cylinder,sphere, line, circular, dipole, discrete_source)
 #
 # sensor = Sensor(pos=(35,0,15))
-# surfsens = SurfaceSensor(N=(20,20), dim=(8,8), pos=(0,0,15), angle=135, axis=(1,0,0))
+# surfsens = SurfaceSensor(Nelem=(5,5), dim=(8,8), pos=(0,0,15), angle=45, axis=(1,0,0))
 # scoll = SensorCollection(sensor, surfsens)
-# surfsens._update(angle=56, pos=(1,2,50))
-# displaySystem(coll, sensor, surfsens, cst=0.2, sensorsources=[line], sensoraxis='z')
+# #surfsens.angle=56
+# #surfsens.position=(1,2,50)
+# surfsens.Nelem = (100,100)
+# traces_properties = dict(cst=0.2, sensorsources=[line], sensoraxis='z')
+# displaySystem(coll, sensor, surfsens, traces_properties=traces_properties)
+
+# %% [raw]
+# sensor1 = Sensor(pos=(-10,0,0))
+# sensor2 = Sensor(pos=(10,0,0))
+# sensor3 = Sensor(pos=(0,0,0))
+# scoll = SensorCollection(sensor1, sensor2)
+#
+# scoll.position = (-10,0,0)
+# scoll.angle = 45
+# scoll.axis = (0,1,0)
+#
+# scoll.position = (30,0,0)
+# fig  = displaySystem(scoll, sensor3, figwidget=True)
+# fig.layout.scene=dict(xaxis_range=[-50,50],
+#                       yaxis_range=[-50,50],
+#                       zaxis_range=[-50,50])
+# fig
 
 # %%
+surfsens = SurfaceSensor(Nelem=(20,20), dim=(8,8), pos=(0,0,15), angle=135, axis=(1,0,0))
+
+# %%
+displaySystem(surfsens)
 
 # %%
