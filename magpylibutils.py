@@ -318,25 +318,30 @@ class SensorCollection(RCS):
 
 # %%
 class SurfaceSensor(SensorCollection):
-    def __init__(self, N=(2,3), dim=(0.2,0.3), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
+    def __init__(self, N=(20,30), dim=(0.2,0.3), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
         self.dimension = dim
         self.Nx = N[0]
         self.Ny = N[1]
         self.pos_x = np.linspace(-dim[0]/2, dim[0]/2, N[0])
         self.pos_y = np.linspace(-dim[1]/2, dim[1]/2, N[1])
-        sensors=[]
+        sensors=[Sensor(pos=(i,0,0)) for i in range(N[0]*N[1])]
+        super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
+        self._update()
+    
+    def _update(self, dim=None, pos=None, angle=None, axis=None):
+        self.position = pos if pos is not None else self.position
+        self.dimension = dim if dim is not None else self.dimension
+        self.angle = angle if angle is not None else self.angle
+        self.axis = axis if axis is not None else self.axis
+        i=0
         for nx in self.pos_x:
             for ny in self.pos_y:
-                s = Sensor(pos=(nx,ny,0), angle=0, axis=(0,0,1))
-                s.rotate(angle=angle, axis=axis, anchor=(0,0,0))
-                s.move(pos)
-                sensors.append(s)
-        super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
+                self.sensors[i].setPosition((nx,ny,0))
+                self.sensors[i].setOrientation(angle=0, axis=(0,0,1))
+                self.sensors[i].rotate(angle=self.angle, axis=self.axis, anchor=(0,0,0))
+                self.sensors[i].move(self.position)
+                i+=1
     
-    def setPosition(self, newpos):
-        for s in self.sensors:
-            s.move(newpos - self.position)
-        
     def getB(self, *sources, mean=True):
         return super().getB(*sources, mean=mean)
     
@@ -346,19 +351,23 @@ class SurfaceSensor(SensorCollection):
                f"\n dimension x: {self.dimension[0]:.2f} mm  n y: {self.dimension[1]:.2f}mm"\
                f"\n position x: {self.position[0]:.2f} mm  n y: {self.position[1]:.2f}mm z: {self.position[2]:.2f}mm"\
                f"\n angle: {self.angle:.2f} Degrees"\
-               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]} z: {self.axis[2]}"
+               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]:.2f} z: {self.axis[2]:.2f}"
 
+
+# %% [raw]
+# ss = SurfaceSensor(N=(3,3), dim=(8,8), pos=(0,0,15), angle=90, axis=(1,0,0))
+# [s.position for s in ss.sensors]
 
 # %% [markdown]
 # # Circular Sensor Array
 
 # %%
 class CircularSensorArray(SensorCollection):
-    def __init__(self, Rs=1, elem_dim=(0.2,0.2), num_of_sensors=4, start_angle=0, surface_sensor=False):
+    def __init__(self, Rs=1, elem_dim=(0.2,0.2), Nelem=(20,30), num_of_sensors=4, start_angle=0, surface_sensor=False):
         self.start_angle = start_angle
         self.elem_dim = elem_dim
         if surface_sensor:
-            S = [SurfaceSensor(pos=(i,0,0), dim=elem_dim) for i in range(num_of_sensors)]
+            S = [SurfaceSensor(pos=(i,0,0), dim=elem_dim, N=Nelem) for i in range(num_of_sensors)]
         else:
             S = [Sensor(pos=(i,0,0)) for i in range(num_of_sensors)]
         super().__init__(*S)
@@ -372,10 +381,8 @@ class CircularSensorArray(SensorCollection):
             elem_dim= self.elem_dim
         theta = np.deg2rad(np.linspace(start_angle, start_angle+360, len(self.sensors)+1))[:-1]
         for s,t in zip(self.sensors,theta):
-            s.setPosition((Rs*np.cos(t), Rs*np.sin(t),0))
-            s.angle=0
-            s.axis=(0,0,1)
-            s.dimension = elem_dim
+            pos = (Rs*np.cos(t), Rs*np.sin(t),0)
+            s._update(pos=pos, angle=0, axis=(0,0,1), dim=elem_dim)
             
     
     def setSensorsDim(self, elem_dim):

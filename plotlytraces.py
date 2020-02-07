@@ -402,8 +402,8 @@ def displaySystem(*objs, figwidget=False, **kwargs):
 # sensor = Sensor(pos=(35,0,15))
 # surfsens = SurfaceSensor(N=(20,20), dim=(8,8), pos=(0,0,15), angle=135, axis=(1,0,0))
 # scoll = SensorCollection(sensor, surfsens)
-# surfsens.setPosition(newpos=(1,2,3))
-# displaySystem(coll, sensor, surfsens, cst=0.2, sensorsources=[line], sensoraxis='x')
+# surfsens._update(angle=56, pos=(1,2,50))
+# displaySystem(coll, sensor, surfsens, cst=0.2, sensorsources=[line], sensoraxis='z')
 
 # %%
 
