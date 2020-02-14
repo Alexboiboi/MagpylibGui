@@ -324,7 +324,7 @@ class CircularSensorArray(SensorCollection):
             S = [Sensor(pos=(i,0,0)) for i in range(num_of_sensors)]
         super().__init__(*S)
         self.setSensorsDim(elem_dim)
-        self.initialize(Rs)
+        self.initialize(Rs=Rs, start_angle=start_angle, elem_dim=elem_dim)
     
     def initialize(self, Rs, start_angle='default', elem_dim='default'):
         if start_angle == 'default':
@@ -333,8 +333,10 @@ class CircularSensorArray(SensorCollection):
             elem_dim= self.elem_dim
         theta = np.deg2rad(np.linspace(start_angle, start_angle+360, len(self.sensors)+1))[:-1]
         for s,t in zip(self.sensors,theta):
-            pos = (Rs*np.cos(t), Rs*np.sin(t),0)
-            s._update(pos=pos, angle=0, axis=(0,0,1), dim=elem_dim)
+            s.position = (Rs*np.cos(t), Rs*np.sin(t),0)
+            s.angle = 0
+            s.axis = (0,0,1)
+            s.dimension = elem_dim
             
     
     def setSensorsDim(self, elem_dim):
