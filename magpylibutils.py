@@ -249,11 +249,16 @@ class SensorCollection:
 # # Surface Sensor
 
 # %%
+
+# %%
 class SurfaceSensor(SensorCollection):
     def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
         self._dimension = dim
         self._Nelem = Nelem
-        sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
+        try:
+            sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
+        except:
+            sensors=[Sensor(pos=(0,0,0))]
         super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
         self._update(dim=dim, Nelem=self._Nelem)
 
@@ -280,7 +285,15 @@ class SurfaceSensor(SensorCollection):
         if Nelem is None:
             Nelem = self._Nelem
         else:
+            assert isinstance(Nelem, (int, (tuple, list))) , 'Nelem must be an integer or an iterable of length 2'
+            if isinstance(Nelem, int):
+                n1 = np.int(np.sqrt(Nelem))
+                n2 = np.int(Nelem/n1)
+                Nelem = (n1, n2)
+            assert len(Nelem)==2 , 'Nelem must be  a tuple of length 2'
+            assert Nelem[0]>0 and Nelem[1]>0, 'Nelem values must be positive'
             self._Nelem = Nelem
+        
         i=0
         for nx in np.linspace(-dim[0]/2, dim[0]/2, Nelem[0]):
             for ny in np.linspace(-dim[1]/2, dim[1]/2, Nelem[1]):
@@ -316,13 +329,6 @@ class SurfaceSensor(SensorCollection):
 # %%
 class CircularSensorArray(SensorCollection):
     def __init__(self, Rs=1, elem_dim=(0.2,0.2), Nelem=(3,3), num_of_sensors=4, start_angle=0):
-        assert isinstance(Nelem, (int, (tuple, list))) , 'Nelem must be an integer or an iterable of length 2'
-        if isinstance(Nelem, int):
-            n1 = np.int(np.sqrt(Nelem))
-            n2 = np.int(Nelem/n1)
-            Nelem = (n1, n2)
-        assert len(Nelem)==2 , 'Nelem must be  a tuple of length 2'
-        assert Nelem[0]>0 and Nelem[1]>0, 'Nelem values must be positive'
         self.start_angle = start_angle
         self.elem_dim = elem_dim
         self.Nelem = Nelem
@@ -332,11 +338,11 @@ class CircularSensorArray(SensorCollection):
         self.initialize(Rs=Rs, start_angle=start_angle, elem_dim=elem_dim)
     
     def initialize(self, Rs, start_angle=None, elem_dim=None, Nelem=None):
-        if start_angle == None:
+        if start_angle is None:
             start_angle= self.start_angle
-        if elem_dim == None:
+        if elem_dim is None:
             elem_dim= self.elem_dim
-        if Nelem == None:
+        if Nelem is None:
             Nelem= self.Nelem
         theta = np.deg2rad(np.linspace(start_angle, start_angle+360, len(self.sensors)+1))[:-1]
         for s,t in zip(self.sensors,theta):
@@ -361,4 +367,4 @@ class CircularSensorArray(SensorCollection):
 # ss = SurfaceSensor(Nelem=(1,1))
 # #s.getB(ds) ss.getB(ds)
 #
-# csa = CircularSensorArray(Rs=1.13/2, num_of_sensors=2, Nelem=(2,2), start_angle=180, elem_dim=(2,2), surface_sensor=True)
+# csa = CircularSensorArray(Rs=1.13/2, num_of_sensors=2, Nelem=(2,2), start_angle=180, elem_dim=(2,2))
