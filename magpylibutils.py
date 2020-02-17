@@ -315,29 +315,36 @@ class SurfaceSensor(SensorCollection):
 
 # %%
 class CircularSensorArray(SensorCollection):
-    def __init__(self, Rs=1, elem_dim=(0.2,0.2), Nelem=(3,3), num_of_sensors=4, start_angle=0, surface_sensor=False):
+    def __init__(self, Rs=1, elem_dim=(0.2,0.2), Nelem=(3,3), num_of_sensors=4, start_angle=0):
+        assert isinstance(Nelem, (int, (tuple, list))) , 'Nelem must be an integer or an iterable of length 2'
+        if isinstance(Nelem, int):
+            n1 = np.int(np.sqrt(Nelem))
+            n2 = np.int(Nelem/n1)
+            Nelem = (n1, n2)
+        assert len(Nelem)==2 , 'Nelem must be  a tuple of length 2'
+        assert Nelem[0]>0 and Nelem[1]>0, 'Nelem values must be positive'
         self.start_angle = start_angle
         self.elem_dim = elem_dim
-        if surface_sensor:
-            S = [SurfaceSensor(pos=(i,0,0), dim=elem_dim, Nelem=Nelem) for i in range(num_of_sensors)]
-        else:
-            S = [Sensor(pos=(i,0,0)) for i in range(num_of_sensors)]
+        self.Nelem = Nelem
+        S = [SurfaceSensor(pos=(i,0,0), dim=elem_dim, Nelem=Nelem) for i in range(num_of_sensors)]
         super().__init__(*S)
         self.setSensorsDim(elem_dim)
         self.initialize(Rs=Rs, start_angle=start_angle, elem_dim=elem_dim)
     
-    def initialize(self, Rs, start_angle='default', elem_dim='default'):
-        if start_angle == 'default':
+    def initialize(self, Rs, start_angle=None, elem_dim=None, Nelem=None):
+        if start_angle == None:
             start_angle= self.start_angle
-        if elem_dim == 'default':
+        if elem_dim == None:
             elem_dim= self.elem_dim
+        if Nelem == None:
+            Nelem= self.Nelem
         theta = np.deg2rad(np.linspace(start_angle, start_angle+360, len(self.sensors)+1))[:-1]
         for s,t in zip(self.sensors,theta):
             s.position = (Rs*np.cos(t), Rs*np.sin(t),0)
             s.angle = 0
             s.axis = (0,0,1)
             s.dimension = elem_dim
-            
+            s.Nelem = Nelem
     
     def setSensorsDim(self, elem_dim):
         assert all(i >= 0 for i in elem_dim)>0, 'dim must be positive'

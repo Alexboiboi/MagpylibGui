@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.3
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -470,9 +470,14 @@ def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40,
                            opacity=opacity, 
                            **kwargs)
     elif isinstance(s, SurfaceSensor):
-        if streamlines:
+        if sum(s.Nelem) < 4:
+            trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, 
+                               dim=sensorsize, 
+                               opacity=opacity, 
+                               **kwargs)
+        elif streamlines:
             trace = make_StreamlinesSensor(s, sensorsources=sensorsources, **kwargs)
-        else:
+        elif s.Nelem:
             trace = make_SurfaceSensor(s, sensorsources=sensorsources, sensoraxis=sensoraxis, showscale=False, **kwargs)
     else:
         trace =  None
@@ -500,7 +505,6 @@ def displaySystem(*objs, figwidget=False, traces_properties=None, fig_layout=Non
         return go.FigureWidget(fig)
     else:
         fig.show()
-
 
 # %% [markdown]
 # # Testing
