@@ -221,7 +221,7 @@ class SensorCollection:
             
     def rotate(self, angle, axis, anchor='self.position'):
         self.rcs.rotate(angle=angle, axis=axis, anchor=anchor)
-        if anchor == 'self.position':
+        if str(anchor) == 'self.position':
             anchor = self.rcs.position
         for s in self.sensors:
             s.rotate(angle, axis, anchor=anchor)
