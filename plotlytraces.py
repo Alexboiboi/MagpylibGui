@@ -153,7 +153,10 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=(5,5), showlegend=True,
         showscale=False, showlegend=showlegend,
         name='3d sensor'
     )
-    dim = np.array([dim[0],dim[1],0.2])
+    try:
+        dim = np.array([dim[0],dim[1],0.2])
+    except:
+        dim = np.array([dim, dim, 0.2])
     dd = 0.8 # shape modifier 
     x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
     y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
@@ -470,6 +473,10 @@ def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40,
                            opacity=opacity, 
                            **kwargs)
     elif isinstance(s, SurfaceSensor):
+        if hasattr(s,'dimension'):
+            sensorsize = s.dimension
+        else:
+            pass
         if sum(s.Nelem) < 4:
             trace = makeSensor(pos=s.position, angle=s.angle, axis=s.axis, 
                                dim=sensorsize, 
@@ -477,7 +484,7 @@ def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40,
                                **kwargs)
         elif streamlines:
             trace = make_StreamlinesSensor(s, sensorsources=sensorsources, **kwargs)
-        elif s.Nelem:
+        else:
             trace = make_SurfaceSensor(s, sensorsources=sensorsources, sensoraxis=sensoraxis, showscale=False, **kwargs)
     else:
         trace =  None

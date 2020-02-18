@@ -157,27 +157,26 @@ class SensorCollection:
             elif isinstance(s, SensorCollection):
                 self.removeSensor(*s.sensors)
                 
-    def getBarray(self, *sources):
-        B = np.array([s.getB(*sources) for s in self.sensors])
-        if B is not None:
-            return B
+    def getBarray(self, *sources, new=False):
+        if not new:
+            B = np.array([s.getB(*sources) for s in self.sensors])
+            if B is not None:
+                return B
+            else:
+                import warnings
+                warnings.warn(
+                "this sensor is not 'seeing' any magnetic source"
+                "returning [[0,0,0]]", RuntimeWarning)
+                return np.array([[0,0,0]])
         else:
-            import warnings
-            warnings.warn(
-            "this sensor is not 'seeing' any magnetic source"
-            "returning [[0,0,0]]", RuntimeWarning)
-            return np.array([[0,0,0]])
-    
-    def getBarraynew(self, *sources, mean=False):
-        pos, ang, ax = self.positions, self.angles, self.axes
-        B = np.array([np.array([s.getB(h) for h in pos]) for s in sources]).sum(axis=0)
-        anch = ax*0 # all anchors are zeros -> rotating only Bvector, using 'ax' to have same array shape
-        #return(B.shape, ang.shape, ax.shape, anch.shape)
-        Brot = angleAxisRotationV(B, -ang, ax, anch)
-        if mean:
-            return Brot.mean(axis=0)
-        else:
-            return Brot
+            pos, ang, ax = self.positions, self.angles, self.axes
+            shape = pos.shape
+            pos = pos.reshape(int(np.prod(shape)/3),3)
+            B = np.array([s.getB(pos).reshape(shape) for s in sources]).sum(axis=0)
+            anch = ax*0 # all anchors are zeros -> rotating only Bvector, using 'ax' to have same array shape
+            #return(B.shape, ang.shape, ax.shape, anch.shape)
+            Brot = angleAxisRotationV(B, -ang, ax, anch)
+            return Brot.mean(axis=1)
 
     @property
     def position(self):
@@ -204,15 +203,15 @@ class SensorCollection:
     
     @property    
     def positions(self):
-        return np.array([s.position for s in self.sensors])
+        return np.array([s.positions if isinstance(s,SensorCollection) else s.position for s in self.sensors])
     
     @property    
     def angles(self):
-        return np.array([s.angle for s in self.sensors])
+        return np.array([s.angle if isinstance(s,SensorCollection) else s.angle for s in self.sensors])
     
     @property
     def axes(self):
-        return np.array([s.axis for s in self.sensors])
+        return np.array([s.axes if isinstance(s,SensorCollection) else s.axis for s in self.sensors])
     
     def move(self, displacement):
         self.rcs.move(displacement)
@@ -249,8 +248,6 @@ class SensorCollection:
 # # Surface Sensor
 
 # %%
-
-# %%
 class SurfaceSensor(SensorCollection):
     def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
         self._dimension = dim
@@ -280,7 +277,13 @@ class SurfaceSensor(SensorCollection):
         if dim is None:
             dim = self._dimension
         else:
-            assert len(dim)==2, 'dimension to be a tuple, list or numpy array of length 2, dim=(dim1, dim2)'
+            assert isinstance(dim, (int, (tuple, list))) , 'dim must be an integer or an iterable of length 2'
+            if isinstance(dim, int):
+                n1 = np.int(np.sqrt(dim))
+                n2 = np.int(dim/n1)
+                dim = (n1, n2)
+            assert len(dim)==2 , 'dim must be  a tuple of length 2'
+            assert dim[0]>0 and dim[1]>0, 'dim values must be positive'
             self._dimension = dim
         if Nelem is None:
             Nelem = self._Nelem
@@ -293,7 +296,8 @@ class SurfaceSensor(SensorCollection):
             assert len(Nelem)==2 , 'Nelem must be  a tuple of length 2'
             assert Nelem[0]>0 and Nelem[1]>0, 'Nelem values must be positive'
             self._Nelem = Nelem
-        
+        if self._Nelem == (1,1):
+            self._dimension = (0,0)
         i=0
         for nx in np.linspace(-dim[0]/2, dim[0]/2, Nelem[0]):
             for ny in np.linspace(-dim[1]/2, dim[1]/2, Nelem[1]):
@@ -308,15 +312,15 @@ class SurfaceSensor(SensorCollection):
             self.removeSensor(*self.sensors[i:])
     
     def getB(self, *sources):
-        return super().getBarray(*sources).mean(axis=0)
+        return self.getBarray(*sources).mean(axis=0)
     
     def __repr__(self):
         return f"name: SurfaceSensor"\
                f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
-               f"\n dimension x: {self.dimension[0]:.2f} mm  n y: {self.dimension[1]:.2f}mm"\
-               f"\n position x: {self.position[0]:.2f} mm  n y: {self.position[1]:.2f}mm z: {self.position[2]:.2f}mm"\
+               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
                f"\n angle: {self.angle:.2f} Degrees"\
-               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]:.2f} z: {self.axis[2]:.2f}"
+               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
 
 
 # %% [raw]
@@ -357,14 +361,37 @@ class CircularSensorArray(SensorCollection):
         for s in self.sensors:
             s.dimension = elem_dim
 
+
 # %% [markdown]
 # # Testing
 
-# %% [raw]
-# ds = DiscreteSourceBox('data/discrete_source_data.csv')
-# #ds = Box(dim=(10,10,10), mag=(1,0,0), pos=(20,0,0))
-# s = Sensor()
-# ss = SurfaceSensor(Nelem=(1,1))
-# #s.getB(ds) ss.getB(ds)
-#
-# csa = CircularSensorArray(Rs=1.13/2, num_of_sensors=2, Nelem=(2,2), start_angle=180, elem_dim=(2,2))
+# %%
+ds = DiscreteSourceBox('data/discrete_source_data.csv')
+box = Box(dim=(10,10,10), mag=(1,0,0), pos=(10,0,0))
+s = Sensor()
+ss = SurfaceSensor(Nelem=(1,1))
+#s.getB(ds) ss.getB(ds)
+
+csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=20, start_angle=180, elem_dim=(0.2,0.2))
+
+# %%
+csa.getBarray(box, new=False).round(5)
+
+# %%
+csa.getBarray(box, new=True).round(5)
+
+# %%
+# %timeit csa.getBarray(ds)
+
+# %timeit csa.getBarray(box)
+
+# %timeit csa.getBarray(box,ds)
+
+# %%
+# %timeit csa.getBarray(ds, new=True)
+
+# %timeit csa.getBarray(box, new=True)
+
+# %timeit csa.getBarray(box,ds, new=True)
+
+# %%
