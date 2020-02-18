@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.3.3
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -142,7 +142,26 @@ class SensorCollection:
 
     def __getitem__(self, i):
         return self.sensors[i]
-            
+    
+    def __add__(self, other):
+        assert isinstance(other, (SensorCollection, Sensor)) , str(other) +  ' item must be a SensorCollection or a sensor'
+        if not isinstance(other, (SensorCollection)):
+            sens = [other]
+        else:
+            sens = other.sensors
+        return SensorCollection(self.sensors + sens)
+
+    def __sub__(self, other):
+        assert isinstance(other, (SensorCollection, Sensor)) , str(other) +  ' item must be a SensorCollection or a sensor'
+        if not isinstance(other, (SensorCollection)):
+            sens = [other]
+        else:
+            sens = other.sensors
+        col = SensorCollection(self.sensors)
+        col.removeSensor(sens)
+        return col
+    
+    
     def addSensor(self, *sensors):
         for s in sensors:
             if isinstance(s,(Sensor,SurfaceSensor)) and s not in self.sensors:
@@ -156,27 +175,6 @@ class SensorCollection:
                 self.sensors.remove(s)
             elif isinstance(s, SensorCollection):
                 self.removeSensor(*s.sensors)
-                
-    def getBarray(self, *sources, new=False):
-        if not new:
-            B = np.array([s.getB(*sources) for s in self.sensors])
-            if B is not None:
-                return B
-            else:
-                import warnings
-                warnings.warn(
-                "this sensor is not 'seeing' any magnetic source"
-                "returning [[0,0,0]]", RuntimeWarning)
-                return np.array([[0,0,0]])
-        else:
-            pos, ang, ax = self.positions, self.angles, self.axes
-            shape = pos.shape
-            pos = pos.reshape(int(np.prod(shape)/3),3)
-            B = np.array([s.getB(pos).reshape(shape) for s in sources]).sum(axis=0)
-            anch = ax*0 # all anchors are zeros -> rotating only Bvector, using 'ax' to have same array shape
-            #return(B.shape, ang.shape, ax.shape, anch.shape)
-            Brot = angleAxisRotationV(B, -ang, ax, anch)
-            return Brot.mean(axis=1)
 
     @property
     def position(self):
@@ -201,17 +199,35 @@ class SensorCollection:
         self.rotate(-angle, axis=self.rcs.axis, anchor=self.rcs.position)
         self.rotate(angle, axis=value, anchor=self.rcs.position)
     
+    def _get_positions(self, recursive=True):
+        if recursive:
+            return np.array([s._get_positions(recursive=True) if isinstance(s,SensorCollection) else s.position for s in self.sensors])
+        else:
+            return np.array([s.position for s in self.sensors])
+    
+    def _get_angles(self, recursive=True):
+        if recursive:
+            return np.array([s._get_angles(recursive=True) if isinstance(s,SensorCollection) else s.angle for s in self.sensors])
+        else:
+            return np.array([s.angle for s in self.sensors])
+    
+    def _get_axes(self, recursive=True):
+        if recursive:
+            return np.array([s._get_axes(recursive=True) if isinstance(s,SensorCollection) else s.axis for s in self.sensors])
+        else:
+            return np.array([s.axis for s in self.sensors])
+    
     @property    
     def positions(self):
-        return np.array([s.positions if isinstance(s,SensorCollection) else s.position for s in self.sensors])
+        return self._get_positions(recursive=False)
     
     @property    
     def angles(self):
-        return np.array([s.angle if isinstance(s,SensorCollection) else s.angle for s in self.sensors])
+        return self._get_angles(recursive=False)
     
     @property
     def axes(self):
-        return np.array([s.axes if isinstance(s,SensorCollection) else s.axis for s in self.sensors])
+        return self._get_axes(recursive=False)
     
     def move(self, displacement):
         self.rcs.move(displacement)
@@ -225,23 +241,30 @@ class SensorCollection:
         for s in self.sensors:
             s.rotate(angle, axis, anchor=anchor)
             
-    def __add__(self, other):
-        assert isinstance(other, (SensorCollection, Sensor)) , str(other) +  ' item must be a SensorCollection or a sensor'
-        if not isinstance(other, (SensorCollection)):
-            sens = [other]
+    def getBarray(self, *sources, new=False):
+        if not new:
+            B = np.array([s.getB(*sources) for s in self.sensors])
+            if B is not None:
+                return B
+            else:
+                import warnings
+                warnings.warn(
+                "this sensor is not 'seeing' any magnetic source"
+                "returning [[0,0,0]]", RuntimeWarning)
+                return np.array([[0,0,0]])
         else:
-            sens = other.sensors
-        return SensorCollection(self.sensors + sens)
-
-    def __sub__(self, other):
-        assert isinstance(other, (SensorCollection, Sensor)) , str(other) +  ' item must be a SensorCollection or a sensor'
-        if not isinstance(other, (SensorCollection)):
-            sens = [other]
-        else:
-            sens = other.sensors
-        col = SensorCollection(self.sensors)
-        col.removeSensor(sens)
-        return col
+            pos, ang, ax = self._get_positions(), self._get_angles(), self._get_axes()
+            shape = pos.shape
+            pos = pos.reshape(int(np.prod(shape)/3),3)
+            B = np.array([s.getB(pos).reshape(shape) for s in sources]).sum(axis=0)
+            anch = ax*0 # all anchors are zeros -> rotating only Bvector, using 'ax' to have same array shape
+            #return(B.shape, ang.shape, ax.shape, anch.shape)
+            Brot = angleAxisRotationV(B.reshape(int(np.prod(shape)/3),3),
+                                      -ang.flatten(),
+                                      ax.reshape(int(np.prod(shape)/3),3),
+                                      anch.reshape(int(np.prod(shape)/3),3))
+            
+            return Brot.reshape(shape).mean(axis=1)
 
 
 # %% [markdown]
@@ -336,18 +359,30 @@ class CircularSensorArray(SensorCollection):
         self.start_angle = start_angle
         self.elem_dim = elem_dim
         self.Nelem = Nelem
+        self.Rs = Rs
         S = [SurfaceSensor(pos=(i,0,0), dim=elem_dim, Nelem=Nelem) for i in range(num_of_sensors)]
         super().__init__(*S)
         self.setSensorsDim(elem_dim)
         self.initialize(Rs=Rs, start_angle=start_angle, elem_dim=elem_dim)
     
     def initialize(self, Rs, start_angle=None, elem_dim=None, Nelem=None):
+        if Rs is None:
+            Rs = self.Rs
+        else:
+             self.Rs = Rs
         if start_angle is None:
             start_angle= self.start_angle
+        else:
+             self.start_angle = start_angle
         if elem_dim is None:
             elem_dim= self.elem_dim
+        else:
+             self.elem_dim = elem_dim
         if Nelem is None:
             Nelem= self.Nelem
+        else:
+             self.Nelem = Nelem
+                
         theta = np.deg2rad(np.linspace(start_angle, start_angle+360, len(self.sensors)+1))[:-1]
         for s,t in zip(self.sensors,theta):
             s.position = (Rs*np.cos(t), Rs*np.sin(t),0)
@@ -372,26 +407,15 @@ s = Sensor()
 ss = SurfaceSensor(Nelem=(1,1))
 #s.getB(ds) ss.getB(ds)
 
-csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=20, start_angle=180, elem_dim=(0.2,0.2))
+csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
 
 # %%
-csa.getBarray(box, new=False).round(5)
+# %time csa.getBarray(box,ds);
 
 # %%
-csa.getBarray(box, new=True).round(5)
+# %time csa.getBarray(box,ds, new=True)
 
 # %%
-# %timeit csa.getBarray(ds)
-
-# %timeit csa.getBarray(box)
-
-# %timeit csa.getBarray(box,ds)
-
-# %%
-# %timeit csa.getBarray(ds, new=True)
-
-# %timeit csa.getBarray(box, new=True)
-
-# %timeit csa.getBarray(box,ds, new=True)
+# %time csa.initialize(Rs=1)
 
 # %%
