@@ -82,15 +82,19 @@ def make_SurfaceSensor(surfsens, sensorsources=None, sensoraxis='z', **kwargs):
         one of "x", "y", "z" corresponding to the relative coordinate system of the sensor array
     '''
     try:
+        color = kwargs['color']
         kwargs.pop('color')
+        colorscale=[[0, color], [1,color]] if color is not None else None
     except:
-        pass
-    if sensorsources is None:
-        sensorsources=[]
+        colorscale = None
     x,y,z = surfsens.positions.T.reshape(3, *surfsens.Nelem)
-    B = surfsens.getBarray(*sensorsources).reshape(*surfsens.Nelem, 3)
-    surfacecolor = B[:,:,['x','y','z'].index(sensoraxis)]
-    trace = go.Surface(x=x,y=y,z=z, surfacecolor=surfacecolor,
+    if sensorsources is not None:
+        B = surfsens.getBarray(*sensorsources).reshape(*surfsens.Nelem, 3)
+        surfacecolor = B[:,:,['x','y','z'].index(sensoraxis)]
+        colorscale = None
+    else:
+        surfacecolor = x*0
+    trace = go.Surface(x=x,y=y,z=z, surfacecolor=surfacecolor, colorscale=colorscale,
                        name=f'surface sensor ({sensoraxis}-axis)')
     trace.update(**kwargs)
     return trace
