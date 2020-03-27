@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -158,9 +158,13 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=(5,5), showlegend=True,
         name='3d sensor'
     )
     try:
-        dim = np.array([dim[0],dim[1],0.2])
+        if len(dim)==2:
+            dim = np.array([dim[0],dim[1],np.mean(dim)/5])
+        else:
+            dim = np.array(dim)
     except:
-        dim = np.array([dim, dim, 0.2])
+        dim = np.array([dim, dim, dim])
+        
     dd = 0.8 # shape modifier 
     x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
     y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
