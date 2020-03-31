@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.4.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -23,6 +23,34 @@ from magpylib._lib.classes.base import RCS
 from magpylib._lib.classes.magnets import Box
 from magpylib._lib.classes.sensor import Sensor
 from pathlib import Path
+
+
+# %%
+def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
+    if len(sources) > 0:
+        POS = np.array(POS)
+        shape = POS.shape
+        POS = POS.reshape(-1,3)
+        if isinstance(ANG, (float,int)):
+            import warnings
+            warnings.warn(f'\n ANG and POS have different lengths, ({0} and {len(POS)}), repeating ANG[0] by len(POS)')
+            ANG = np.tile(ANG, len(POS))
+        ANG = np.array(ANG).flatten()
+        AXIS = np.array(AXIS).reshape(-1,3)
+        if len(AXIS)!=len(POS):
+            import warnings
+            warnings.warn(f'\n AXIS and POS have different lengths, ({len(AXIS)} and {len(POS)}), repeating AXIS[0] by len(POS)')
+            AXIS = np.repeat([AXIS[0]], len(POS), axis=0)
+        ANCHOR = POS*0  # all anchors are zeros -> rotating only Bvector, using 'anchor' to have same array shape        
+        B = np.array([s.getB(POS) for s in sources]).sum(axis=0)
+        Brot = angleAxisRotationV(B,-ANG, AXIS, ANCHOR)
+        return Brot.reshape(shape)
+    else:
+        import warnings
+        warnings.warn(
+        "no magnetic source"
+        "returning [[0,0,0]]", RuntimeWarning)
+        return np.array([[0,0,0]])
 
 
 # %% [markdown]
@@ -58,18 +86,25 @@ class DiscreteSourceBox(Box):
         self.position = self._center + np.array(pos)
         self.magnetization = (0,0,0)
         self.angle = angle
-        self.axis = axis
+        self.axis = np.array(axis)
         self.interpFunc = self._interpolate_data(df, bounds_error=bounds_error, fill_value=fill_value)
         self.data_downsampled = self.get_downsampled_array(df, N=5)
         self.dataframe = df
         
     def getB(self, pos):
-        pos += self._center - self.position
-        B = self.interpFunc(pos)
+        POS = np.array(pos + self._center - self.position)
         if self.angle!=0:
-            return np.array([angleAxisRotation(b, self.angle, self.axis) for b in B])
+            if len(POS)==3:
+                POS = np.array([POS])
+            ANG = np.tile(self.angle, len(POS)).flatten()
+            AXIS = np.repeat(np.array([self.axis]), len(POS), axis=0)
+            ANCHOR = POS*0 
+            POSrot = angleAxisRotationV(POS, -ANG, AXIS, ANCHOR)
+            Bi = self.interpFunc(POSrot)
+            B = angleAxisRotationV(Bi, ANG, AXIS, ANCHOR)
         else:
-            return B[0] if B.shape[0] == 1 else B
+            B = self.interpFunc(POS)
+        return B[0] if B.shape[0] == 1 else B
     
     def _interpolate_data(self, data, bounds_error, fill_value):
         '''data: pandas dataframe
@@ -244,34 +279,6 @@ class SensorCollection:
     def getBarray(self, *sources):
         POS, ANG, AXIS = self._get_positions(recursive=True), self._get_angles(recursive=True), self._get_axes(recursive=True)
         return getBarray(*sources, POS=POS, ANG=ANG, AXIS=AXIS)
-
-
-# %%
-def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
-    if len(sources) > 0:
-        POS = np.array(POS)
-        shape = POS.shape
-        POS = POS.reshape(-1,3)
-        if isinstance(ANG, (float,int)):
-            import warnings
-            warnings.warn(f'\n ANG and POS have different lengths, ({0} and {len(POS)}), repeating ANG[0] by len(POS)')
-            ANG = np.tile(ANG, len(POS))
-        ANG = np.array(ANG).flatten()
-        AXIS = np.array(AXIS).reshape(-1,3)
-        if len(AXIS)!=len(POS):
-            import warnings
-            warnings.warn(f'\n AXIS and POS have different lengths, ({len(AXIS)} and {len(POS)}), repeating AXIS[0] by len(POS)')
-            AXIS = np.repeat([AXIS[0]], len(POS), axis=0)
-        ANCHOR = POS*0  # all anchors are zeros -> rotating only Bvector, using 'anchor' to have same array shape        
-        B = np.array([s.getB(POS) for s in sources]).sum(axis=0)
-        Brot = angleAxisRotationV(B,-ANG, AXIS, ANCHOR)
-        return Brot.reshape(shape)
-    else:
-        import warnings
-        warnings.warn(
-        "no magnetic source"
-        "returning [[0,0,0]]", RuntimeWarning)
-        return np.array([[0,0,0]])
 
 
 # %% [markdown]

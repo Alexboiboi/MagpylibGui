@@ -37,7 +37,7 @@ from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor
 # Defaults
 SENSORSIZE = (5,5)
 DIPOLESIZEREF = 5
-DISCRETESOURCE_OPACITY = 0.5
+DISCRETESOURCE_OPACITY = 0.1
 
 
 # %% [markdown]
@@ -183,22 +183,28 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=(5,5), showlegend=True,
 # ## Discrete Box
 
 # %%
-def makeDiscreteBox(data, pos = (0,0,0), angle=0, axis=(0,0,1), opacity=DISCRETESOURCE_OPACITY, showlegend=True, **kwargs):
-    '''data: numpy array data.T[0:2] -> x,y,z
-                         data.T[3] -> Bmag'''
-    x,y,z,Bmag = data.T
-    dbox = go.Volume(value = Bmag, opacity=opacity,
+def makeDiscreteBox(data, pos = (0,0,0), angle=0, axis=(0,0,1), showlegend=True, **kwargs):
+    dmin = np.min(data,axis=0)
+    dmax = np.max(data,axis=0)
+    dim = (dmax - dmin)[:-1]
+    box = go.Mesh3d(
+        i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
+        j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
+        k = np.array([0, 7, 2, 3, 6, 7, 1, 2, 5, 5, 7, 6]),
         showscale=False, showlegend=showlegend,
-        name=f'''discrete data (Bmin={min(Bmag):.2f}, Bmax={max(Bmag):.2f}mT)'''
+        name=f'''discrete data (Bmin={dmin[-1]:.2f}, Bmax={dmax[-1]:.2f}mT)'''    
     )
-    points = np.array([x+pos[0],y+pos[1],z+pos[2]])
+    x = np.array([-1, -1, 1, 1, -1, -1, 1, 1])*0.5*dim[0]+pos[0]
+    y = np.array([-1, 1, 1, -1, -1, 1, 1, -1])*0.5*dim[1]+pos[1]
+    z = np.array([-1, -1, -1, -1, 1, 1, 1, 1])*0.5*dim[2]+pos[2]
+    points = np.array([x,y,z])
     
     if angle!=0:
         points = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
     
-    dbox.x , dbox.y, dbox.z = points
-    dbox.update(**kwargs)
-    return dbox
+    box.x , box.y, box.z = points
+    box.update(**kwargs)
+    return box
 
 
 # %% [markdown]
