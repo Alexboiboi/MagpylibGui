@@ -22,8 +22,28 @@ from magpylib._lib.mathLib import angleAxisRotation
 from magpylib._lib.classes.base import RCS
 from magpylib._lib.classes.magnets import Box
 from magpylib._lib.classes.sensor import Sensor
+from magpylib._lib.classes.collection import Collection
 from pathlib import Path
 
+# %% [markdown]
+# # Defaults
+
+# %%
+SENIS_file_params = dict(usecols=[1,2,3,4,5,6],
+                         names=['Bx','Bz','By','x','z','y'],
+                         factors=[1,-1,1,1,1,-1],
+                         delimiter=',',
+                         skiprows=1)
+           
+ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
+                         names=['x','y','z','Bx','By','Bz'],
+                         factors=[1000,1000,1000,1000,1000,1000],
+                         delimiter=' ',
+                         skiprows=2)
+
+
+# %% [markdown]
+# # Functions
 
 # %%
 def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
@@ -51,6 +71,121 @@ def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
         "no magnetic source"
         "returning [[0,0,0]]", RuntimeWarning)
         return np.array([[0,0,0]])
+
+
+# %%
+def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4,5], 
+              names=['x','z','y','Bx','By','Bz'], delimiter=',', skiprows=1,
+              bounds_error=False, fill_value=np.nan, **kwargs):
+    def recenter_df(v):
+        return v - 0.5*(v.max(axis=0) + v.min(axis=0))
+    default_names = ['x','y','z','Bx','By','Bz']
+    df = pd.read_csv(filename, usecols=usecols, names=default_names, delimiter=delimiter, skiprows=skiprows, **kwargs)
+    if df.duplicated(['x', 'y', 'z']).any():
+        df = df.groupby(['x', 'y', 'z']).median().reset_index(drop=True)
+    dfc = df.copy()
+    # redefine coordinate systems using factors and columns
+    for dn,n,f in zip(default_names, names, factors):
+        df[dn] = dfc[n].values*f
+    if recenter is not None:
+        for i,k in enumerate(['x','y','z']):
+            df[k] = recenter_df(df[k].values) + recenter[1]
+    return DiscreteSourceBox(df, bounds_error=bounds_error, fill_value=fill_value)
+
+
+# %% [markdown]
+# ## MCollection/MDataset
+
+# %%
+SENIS_file_params = dict(usecols=[1,2,3,4,5,6],
+                         names=['Bx','Bz','By','x','z','y'],
+                         factors=[1,-1,1,1,1,-1],
+                         delimiter=',',
+                         skiprows=1)
+           
+ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
+                         names=['x','y','z','Bx','By','Bz'],
+                         factors=[1000,1000,1000,1000,1000,1000],
+                         delimiter=' ',
+                         skiprows=2)
+
+
+# %%
+def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4,5], 
+              names=['x','z','y','Bx','By','Bz'], delimiter=',', skiprows=1,
+              bounds_error=False, fill_value=np.nan, **kwargs):
+    def recenter_df(v):
+        return v - 0.5*(v.max(axis=0) + v.min(axis=0))
+    default_names = ['x','y','z','Bx','By','Bz']
+    df = pd.read_csv(filename, usecols=usecols, names=default_names, delimiter=delimiter, skiprows=skiprows, **kwargs)
+    if df.duplicated(['x', 'y', 'z']).any():
+        df = df.groupby(['x', 'y', 'z']).median().reset_index(drop=True)
+    dfc = df.copy()
+    # redefine coordinate systems using factors and columns
+    for dn,n,f in zip(default_names, names, factors):
+        df[dn] = dfc[n].values*f
+    if recenter is not None:
+        for i,k in enumerate(['x','y','z']):
+            df[k] = recenter_df(df[k].values) + recenter[1]
+    return DiscreteSourceBox(df, bounds_error=bounds_error, fill_value=fill_value)
+
+
+# %%
+class MCollection(Collection):
+    def __init__(self, sources=None, sensors=None, nonmodelobjs=None, name=None):
+        super().__init__(*sources)
+        if name is None:
+            name = 'collection_' +str(id(self))
+        self.name = name
+        self.sensors = sensors if sensors is not None else []
+        self.nonmodelobjs = nonmodelobjs if nonmodelobjs is not None else []
+
+    def __repr__(self):
+        return f"Magpylib Collection\n"\
+               f"sources: {self.sources}\n"\
+               f"sensors: {self.sensors}\n"\
+               f"non model objects: {self.nonmodelobjs}\n"
+
+
+# %%
+class MDataset:
+    def __init__(self, *collections):
+        self.collections=[]
+        self.add_collections(*collections)
+        
+    @property
+    def names(self):
+        return [d.name for d in self.collections]
+    
+    @property
+    def sets(self):
+        return [d.sources for d in self.collections]
+    
+    def add_collections(self, *collections):
+        for d in collections:
+            self.collections.append(d)
+            
+    def __iter__(self):
+        for s in self.collections:
+            yield s
+
+    def __getitem__(self, i):
+        return self.collections[i]
+    
+    def __len__(self):
+        return len(self.collections)
+    
+    def __add__(self, other):
+        assert isinstance(other, (MDataset, MCollection)) , str(other) +  ' item must be a MCollection or a MDataset'
+        if not isinstance(other, (MCollection)):
+            d = [other]
+        else:
+            d = other.collections
+        return MDataset(self.collections + d)
+    
+    def __repr__(self):
+        return f"Magpylib Dataset\n"\
+               f"{str({d.name: str(len(d.sources))+' sources, ' + str(len(d.sensors))+ ' sensors, ' + str(len(d.nonmodelobjs))+ ' non model objects' for d in self.collections})}"
 
 
 # %% [markdown]
@@ -82,8 +217,7 @@ class DiscreteSourceBox(Box):
         M = np.max(df.values,axis=0)
         self.dimension = (M-m)[:3]
         self._center = 0.5*(M+m)[:3]
-        self.position = self._center + np.array(pos)
-        self.position = self._center + np.array(pos)
+        self.position = np.array(pos)
         self.magnetization = (0,0,0)
         self.angle = angle
         self.axis = np.array(axis)
@@ -92,7 +226,7 @@ class DiscreteSourceBox(Box):
         self.dataframe = df
         
     def getB(self, pos):
-        POS = np.array(pos + self._center - self.position)
+        POS = np.array(pos - self.position)
         if self.angle!=0:
             if len(POS)==3:
                 POS = np.array([POS])
@@ -167,9 +301,9 @@ class SensorCollection:
     def __repr__(self):
         return f"SensorCollection"\
                f"\n sensor children: N={len(self.sensors)}"\
-               f"\n position x: {self.position[0]:.2f} mm  n y: {self.position[1]:.2f}mm z: {self.position[2]:.2f}mm"\
-               f"\n angle: {self.angle:.2f} Degrees"\
-               f"\n axis: x: {self.axis[0]:.2f}   n y: {self.axis[1]} z: {self.axis[2]}"
+                "position: x={:.2f}mm, y={:.2f}mm, z={:.2f}mm\n".format(*self.position,) + \
+                "angle: {:.2f} Degrees\n".format(self.angle) + \
+                "axis: x={:.2f}, y={:.2f}, z={:.2f}".format(*self.axis)
 
     def __iter__(self):
         for s in self.sensors:

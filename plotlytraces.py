@@ -32,7 +32,7 @@ from magpylib._lib.classes.sensor import Sensor
 from magpylib._lib.classes.collection import Collection
 
 import magpylibutils
-from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor
+from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor, RotationAxis
 
 # Defaults
 SENSORSIZE = (5,5)
@@ -64,6 +64,31 @@ def repnan(a):
     a = np.array(a)
     a[np.isnan(a)]=None
     return a
+
+
+# %% [markdown]
+# # Other definitions
+
+# %%
+def make_RotationAxis(rotAxis, name='Rotation Axis', **kwargs):
+    pos = rotAxis.position
+    dim = rotAxis.dimension
+    angle = rotAxis.angle
+    axis = rotAxis.axis
+    try:
+        kwargs.pop('color')
+    except:
+        pass
+    x = [pos[0], pos[0]]
+    y = [pos[1], pos[1]]
+    z = [pos[2]-dim/2, pos[2]+dim/2]
+    points = np.array([x,y,z])
+    if angle!=0:
+        x,y,z = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
+
+    scatter = go.Scatter3d(x=x, y=y, z=z, name=name, mode='lines+text', text=['(-)','(+)'], textposition="top right")
+    scatter.update(**kwargs)
+    return scatter  
 
 
 # %% [markdown]
@@ -194,9 +219,9 @@ def makeDiscreteBox(data, pos = (0,0,0), angle=0, axis=(0,0,1), showlegend=True,
         showscale=False, showlegend=showlegend,
         name=f'''discrete data (Bmin={dmin[-1]:.2f}, Bmax={dmax[-1]:.2f}mT)'''    
     )
-    x = np.array([-1, -1, 1, 1, -1, -1, 1, 1])*0.5*dim[0]+pos[0]
-    y = np.array([-1, 1, 1, -1, -1, 1, 1, -1])*0.5*dim[1]+pos[1]
-    z = np.array([-1, -1, -1, -1, 1, 1, 1, 1])*0.5*dim[2]+pos[2]
+    x = np.array([-1, -1, 1, 1, -1, -1, 1, 1])*0.5*dim[0]+pos[0] + 0.5*(dmin[0]+dmax[0])
+    y = np.array([-1, 1, 1, -1, -1, 1, 1, -1])*0.5*dim[1]+pos[1] + 0.5*(dmin[1]+dmax[1])
+    z = np.array([-1, -1, -1, -1, 1, 1, 1, 1])*0.5*dim[2]+pos[2] + 0.5*(dmin[2]+dmax[2])
     points = np.array([x,y,z])
     
     if angle!=0:
@@ -500,10 +525,12 @@ def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40,
             trace = make_StreamlinesSensor(s, sensorsources=sensorsources, **kwargs)
         else:
             trace = make_SurfaceSensor(s, sensorsources=sensorsources, sensoraxis=sensoraxis, showscale=False, **kwargs)
+    elif isinstance(s,RotationAxis):
+        trace = make_RotationAxis(s, **kwargs)
     else:
         trace =  None
     
-    if showhoverdata and trace is not None:
+    if showhoverdata and trace is not None and not isinstance(s,RotationAxis):
         trace.hoverinfo = 'text'
         try:
             name = s.name + '<br>'
