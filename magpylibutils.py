@@ -135,7 +135,7 @@ class MCollection(Collection):
     def __init__(self, sources=None, sensors=None, nonmodelobjs=None, name=None):
         super().__init__(*sources)
         if name is None:
-            name = 'collection_' +str(id(self))
+            name = 'Collection_' +str(id(self))
         self.name = name
         self.sensors = sensors if sensors is not None else []
         self.nonmodelobjs = nonmodelobjs if nonmodelobjs is not None else []
@@ -186,6 +186,26 @@ class MDataset:
     def __repr__(self):
         return f"Magpylib Dataset\n"\
                f"{str({d.name: str(len(d.sources))+' sources, ' + str(len(d.sensors))+ ' sensors, ' + str(len(d.nonmodelobjs))+ ' non model objects' for d in self.collections})}"
+
+
+# %% [markdown]
+# # Rotation Axis
+
+# %%
+class RotationAxis(RCS):
+    def __init__(self, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.), dim=10., name=None):
+        super().__init__(position=pos, angle=angle, axis=axis)
+        self.dimension = dim
+        if name is None:
+            name = 'RotationAxis_' +str(id(self))
+        self.name = name
+        
+    def __repr__(self):
+        return f"{self.name}\n" + \
+                "length: {:.2f}mm\n".format(self.dimension) + \
+                "position: x={:.2f}mm, y={:.2f}mm, z={:.2f}mm\n".format(*self.position,) + \
+                "angle: {:.2f} Degrees\n".format(self.angle) + \
+                "axis: x={:.2f}, y={:.2f}, z={:.2f}".format(*self.axis)
 
 
 # %% [markdown]
