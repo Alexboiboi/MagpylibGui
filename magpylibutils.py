@@ -139,7 +139,8 @@ class MCollection(Collection):
         self.name = name
         self.sensors = sensors if sensors is not None else []
         self.nonmodelobjs = nonmodelobjs if nonmodelobjs is not None else []
-
+        self.objects = self.sources + self.sensors + self.nonmodelobjs
+        
     def __repr__(self):
         return f"Magpylib Collection\n"\
                f"sources: {self.sources}\n"\
@@ -438,80 +439,79 @@ class SensorCollection:
 # %% [markdown]
 # # Surface Sensor
 
-# %%
-class SurfaceSensorOld(SensorCollection):
-    def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
-        try:
-            sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
-        except:
-            sensors=[Sensor(pos=(0,0,0))]
-        super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
-        self.update(Nelem=Nelem, dim=dim)
-
-    @property
-    def dimension(self):
-        return self._dimension
-    @dimension.setter
-    def dimension(self, val):
-        self.update(dim=val)
-        
-    @property
-    def Nelem(self):
-        return self._Nelem
-    @Nelem.setter
-    def Nelem(self, val):
-        self.update(Nelem=val)
-        
-    def update(self, pos=None, angle=None, axis=None, dim=None, Nelem=None):
-        if pos is not  None:
-            self.rcs.position = pos
-        if angle is not  None:
-            self.rcs.angle = angle
-        if axis is not  None:
-            self.rcs.axis = axis
-        if dim is None:
-            dim = self._dimension
-        if isinstance(dim, (int,float)):
-            dim = (dim, dim)
-        dim = self._dimension = np.array(dim)
-        if Nelem is None:
-            Nelem = self._Nelem
-        if isinstance(Nelem, (int,float)):
-            n1 = np.int(np.sqrt(Nelem))
-            n2 = np.int(Nelem/n1)
-            Nelem = (n1, n2)
-        self._Nelem = Nelem = np.array(Nelem).astype(int)
-        
-        if Nelem[0]==1 or Nelem[1]==1:
-            dim = self._dimension = np.array([0,0])
-        
-        POS = np.mgrid[-dim[0]/2:dim[0]/2:Nelem[0]*1j,-dim[1]/2:dim[1]/2:Nelem[1]*1j, 0:0:1j].reshape(3,-1).T
-        ANG = np.tile(self.angle, len(POS))
-        AXIS = np.repeat([self.axis], len(POS), axis=0)
-        ANCHOR = np.repeat([[0,0,0]], len(POS), axis=0)
-        posrot = angleAxisRotationV(POS=POS ,ANG=ANG, AXIS=AXIS, ANCHOR=ANCHOR)
-        
-        for i in range(len(posrot)):
-            if i>=len(self.sensors):
-                self.addSensor(Sensor(pos=(i,0,0)))
-            self.sensors[i].position = posrot[i] + self.position
-            self.sensors[i].angle= self.angle
-            self.sensors[i].axis = self.axis
-            i+=1
-        if i<len(self.sensors):
-            self.removeSensor(*self.sensors[i:])
-    
-    def getB(self, *sources):
-        return self.getBarray(*sources).mean(axis=0)
-    
-    def __repr__(self):
-        return f"name: SurfaceSensor"\
-               f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
-               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
-               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
-               f"\n angle: {self.angle:.2f} Degrees"\
-               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
-
+# %% [raw]
+# class SurfaceSensorOld(SensorCollection):
+#     def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
+#         try:
+#             sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
+#         except:
+#             sensors=[Sensor(pos=(0,0,0))]
+#         super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
+#         self.update(Nelem=Nelem, dim=dim)
+#
+#     @property
+#     def dimension(self):
+#         return self._dimension
+#     @dimension.setter
+#     def dimension(self, val):
+#         self.update(dim=val)
+#         
+#     @property
+#     def Nelem(self):
+#         return self._Nelem
+#     @Nelem.setter
+#     def Nelem(self, val):
+#         self.update(Nelem=val)
+#         
+#     def update(self, pos=None, angle=None, axis=None, dim=None, Nelem=None):
+#         if pos is not  None:
+#             self.rcs.position = pos
+#         if angle is not  None:
+#             self.rcs.angle = angle
+#         if axis is not  None:
+#             self.rcs.axis = axis
+#         if dim is None:
+#             dim = self._dimension
+#         if isinstance(dim, (int,float)):
+#             dim = (dim, dim)
+#         dim = self._dimension = np.array(dim)
+#         if Nelem is None:
+#             Nelem = self._Nelem
+#         if isinstance(Nelem, (int,float)):
+#             n1 = np.int(np.sqrt(Nelem))
+#             n2 = np.int(Nelem/n1)
+#             Nelem = (n1, n2)
+#         self._Nelem = Nelem = np.array(Nelem).astype(int)
+#         
+#         if Nelem[0]==1 or Nelem[1]==1:
+#             dim = self._dimension = np.array([0,0])
+#         
+#         POS = np.mgrid[-dim[0]/2:dim[0]/2:Nelem[0]*1j,-dim[1]/2:dim[1]/2:Nelem[1]*1j, 0:0:1j].reshape(3,-1).T
+#         ANG = np.tile(self.angle, len(POS))
+#         AXIS = np.repeat([self.axis], len(POS), axis=0)
+#         ANCHOR = np.repeat([[0,0,0]], len(POS), axis=0)
+#         posrot = angleAxisRotationV(POS=POS ,ANG=ANG, AXIS=AXIS, ANCHOR=ANCHOR)
+#         
+#         for i in range(len(posrot)):
+#             if i>=len(self.sensors):
+#                 self.addSensor(Sensor(pos=(i,0,0)))
+#             self.sensors[i].position = posrot[i] + self.position
+#             self.sensors[i].angle= self.angle
+#             self.sensors[i].axis = self.axis
+#             i+=1
+#         if i<len(self.sensors):
+#             self.removeSensor(*self.sensors[i:])
+#     
+#     def getB(self, *sources):
+#         return self.getBarray(*sources).mean(axis=0)
+#     
+#     def __repr__(self):
+#         return f"name: SurfaceSensor"\
+#                f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
+#                f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+#                f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
+#                f"\n angle: {self.angle:.2f} Degrees"\
+#                f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
 
 # %%
 class SurfaceSensor(RCS):
@@ -587,6 +587,46 @@ class SurfaceSensor(RCS):
         
     def __repr__(self):
         return f"name: SurfaceSensor"\
+               f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
+               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
+
+
+# %% [markdown]
+# # Streamlines
+
+# %%
+class Streamlines(SurfaceSensor):
+    def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1],
+                 density='auto', arrow_scale=0.1):
+        super().__init__(Nelem=Nelem, dim=dim, pos=pos, angle=angle, axis=axis)
+        self.density = 'auto'
+        self.arrow_scale = arrow_scale
+        
+    def __repr__(self):
+        return f"name: Streamlines"\
+               f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
+               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
+
+
+# %% [markdown]
+# # Surface
+
+# %%
+class Surface(SurfaceSensor):
+    def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1], 
+                 density='auto', arrow_scale=0.1):
+        super().__init__(Nelem=Nelem, dim=dim, pos=pos, angle=angle, axis=axis)
+        self.density = 'auto'
+        self.arrow_scale = arrow_scale
+        
+    def __repr__(self):
+        return f"name: Surface"\
                f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
                f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
                f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
