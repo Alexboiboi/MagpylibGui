@@ -32,7 +32,7 @@ from magpylib._lib.classes.sensor import Sensor
 from magpylib._lib.classes.collection import Collection
 
 import magpylibutils
-from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor, RotationAxis, Streamlines, Surface
+from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor, RotationAxis, Streamlines, Surface, isSource
 
 # Defaults
 SENSORSIZE = 1
@@ -42,31 +42,6 @@ DISCRETESOURCE_OPACITY = 0.1
 
 # %% [markdown]
 # # Special functions
-
-# %%
-def isSource(theObject: any) -> bool:
-    """
-    Check is an object is a magnetic source.
-
-    Parameter
-    ---------
-        theObject: any
-            Object to be evaluated if it is a source. Update list when new sources are up
-    Returns
-    -------
-        bool
-    """
-    from magpylib import source
-    sourcesList = (
-        source.magnet.Box,
-        source.magnet.Sphere,
-        source.magnet.Cylinder,
-        source.current.Line,
-        source.current.Circular,
-        source.moment.Dipole,
-        DiscreteSourceBox)
-    return any(isinstance(theObject, src) for src in sourcesList)
-
 
 # %%
 def _getIntensity(points, mag, pos):

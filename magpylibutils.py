@@ -46,6 +46,31 @@ ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
 # # Functions
 
 # %%
+def isSource(theObject: any) -> bool:
+    """
+    Check is an object is a magnetic source.
+
+    Parameter
+    ---------
+        theObject: any
+            Object to be evaluated if it is a source. Update list when new sources are up
+    Returns
+    -------
+        bool
+    """
+    from magpylib import source
+    sourcesList = (
+        source.magnet.Box,
+        source.magnet.Sphere,
+        source.magnet.Cylinder,
+        source.current.Line,
+        source.current.Circular,
+        source.moment.Dipole,
+        DiscreteSourceBox)
+    return any(isinstance(theObject, src) for src in sourcesList)
+
+
+# %%
 def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
     if len(sources) > 0:
         POS = np.array(POS)
@@ -694,8 +719,8 @@ class CircularSensorArray(SensorCollection):
 # %time csa.getBarray(box).mean(axis=1)
 
 # %% [raw]
-# def f1(N=1):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# def f1(N=1, Nelem=5):
+#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     B = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
@@ -706,8 +731,8 @@ class CircularSensorArray(SensorCollection):
 #     #return np.array(B).mean(axis=2)
 #
 #
-# def f2(N=1):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# def f2(N=1, Nelem=5):
+#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     ANG = []
 #     AXIS = []
 #     POS = []
@@ -719,8 +744,8 @@ class CircularSensorArray(SensorCollection):
 #     #return np.array(B.mean(axis=2))
 #
 #
-# def f3(N=1):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# def f3(N=1, Nelem=5):
+#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     B = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
@@ -730,7 +755,38 @@ class CircularSensorArray(SensorCollection):
 #
 #     
 #
-# N=100
-# %time f1(N)
-# %time f2(N)
-# %time f3(N)
+# N=36
+# Nelem=25
+# %time f1(N, Nelem)
+# %time f2(N, Nelem)
+# %time f3(N, Nelem)
+
+# %% [raw]
+# csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# rotax = RotationAxis()
+# def getB_from_rotation(input_objs, sensors, sources, rotaxis, start=0, step=1, nsteps=360):
+#     sources = [io for io in input_objs if isSource(io)]
+#     
+#     for sens in sensors:
+#         ANG = []
+#         AXIS = []
+#         POS = []
+#         for i in range(nsteps):
+#             for obj in input_objs:
+#                 obj.rotate(angle=i, axis=rotaxis.axis, anchor=rotaxis.position)
+#                 if isinstance(obj, SurfaceSensor):
+#                     POS.append(sens._get_positions())
+#                     AXIS.append(sens._get_axes())
+#                     ANG.append(sens._get_angles())
+#                 else:
+#                     POS.append(sens.position)
+#                     AXIS.append(sens.axis())
+#                     ANG.append(sens.angle)
+#             
+#                 
+#         p=POS.append(csa._get_positions())
+#     B = getBarray(*sources, POS=POS, ANG=, AXIS=)
+
+# %% [raw]
+# ss = SurfaceSensor(Nelem=(30,30), dim=(8,8), pos=(0,0,15), angle=90, axis=(1,0,0))
+# ds = DiscreteSourceBox('data/discrete_source_data.csv')
