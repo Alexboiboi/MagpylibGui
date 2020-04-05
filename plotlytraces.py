@@ -32,7 +32,10 @@ from magpylib._lib.classes.sensor import Sensor
 from magpylib._lib.classes.collection import Collection
 
 import magpylibutils
-from magpylibutils import DiscreteSourceBox, SensorCollection, SurfaceSensor, RotationAxis, Streamlines, Surface, isSource
+from magpylibutils import (DiscreteSourceBox, SensorCollection, SurfaceSensor, MCollection,
+                           RotationAxis, 
+                           Streamlines, Surface, 
+                           isSource)
 
 # Defaults
 SENSORSIZE = 1
@@ -418,8 +421,11 @@ def getTraces(*input_objs, sensorsources='from_input', cst=0, color=None, Nver=4
               sensorsize=SENSORSIZE, sensoraxis='z', streamlines=False, **kwargs):
     traces=[]
     for s in input_objs:
-        if isinstance(s, (tuple, list, Collection, SensorCollection)) and not isinstance(s, SurfaceSensor):
-            parent = s.sources if isinstance(s, Collection) else s
+        if isinstance(s, (tuple, list, Collection, SensorCollection, MCollection)):
+            if isinstance(s, Collection):
+                parent = s.sources
+            elif if isinstance(s, MCollection):
+                parent = s.objects
             tcs = getTraces(*parent, sensorsources=sensorsources, cst=cst, color=color, Nver=Nver, 
                             showhoverdata=showhoverdata, dipolesizeref=dipolesizeref, 
                             opacity=opacity, showlegend=showlegend,

@@ -118,6 +118,61 @@ def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4
     return DiscreteSourceBox(df, bounds_error=bounds_error, fill_value=fill_value)
 
 
+# %%
+def record_rotation_array(objs_to_rotate, sensors, sources, axis=(0.,0.,1.), anchor=(0.,0.,0.), 
+                         start=0, step=1, nsteps=360):
+    if not isinstance(objs_to_rotate, (tuple,list)):
+        objs_to_rotate = [objs_to_rotate]
+    if not isinstance(sensors, (tuple,list)):
+        sensors = [sensors]
+    if not isinstance(sources, (tuple,list)):
+        sources = [sources]
+    sources = [s for s in sources if isSource(s)]
+
+    scols = [s for s in sensors if isinstance(s, SensorCollection)]
+    regular_sensors = [s for s in sensors if not isinstance(s, SensorCollection)]
+    sensors =  regular_sensors + [s for sc in scols for s in sc.sensors]
+    # record start states
+    start_states=[]
+    for obj in objs_to_rotate:
+        state= dict(position=obj.position, angle=obj.angle, axis=obj.axis)
+        start_states.append(state)
+        obj.rotation_data=pd.Series(dict(positions = np.zeros((nsteps,3)),
+                                         angles = np.zeros(nsteps),
+                                         axes = np.zeros((nsteps,3))
+                                        )
+                                   )
+    #start main loop    
+    for sens_ind,sens in enumerate(sensors):
+        ANG = []; AXIS = [] ; POS = []
+        for i in range(nsteps):
+            for obj in objs_to_rotate:
+                obj.rotate(angle=step, axis=axis, anchor=anchor)
+                obj.rotation_data['positions'][i] = obj.position
+                obj.rotation_data['angles'][i] = obj.angle
+                obj.rotation_data['axes'][i] = obj.axis
+            if isinstance(sens, SurfaceSensor):
+                POS.append(sens._get_positions())
+                AXIS.append(sens._get_axes())
+                ANG.append(sens._get_angles())
+            else:
+                POS.append(sens.position)
+                AXIS.append(sens.axis)
+                ANG.append(sens.angle)
+            
+        B = getBarray(*sources, POS=POS, ANG=ANG, AXIS=AXIS)
+        
+        if isinstance(sens, SurfaceSensor):
+            B = B.mean(axis=1)
+            
+        sens.Barray = np.array(B)
+        
+        for obj,state in zip(objs_to_rotate,start_states):
+            obj.position = state['position']
+            obj.angle = state['angle']
+            obj.axis = state['axis']
+
+
 # %% [markdown]
 # ## MCollection/MDataset
 
@@ -239,7 +294,7 @@ class RotationAxis(RCS):
 
 # %%
 class DiscreteSourceBox(Box):
-    def __init__(self, data, bounds_error=None, fill_value=None, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
+    def __init__(self, data, bounds_error=False, fill_value=np.nan, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
         '''
         data : csv file, pandas dataframe, or numpy array
             !!! IMPORTANT !!! columns value must be in this order: x,y,z,Bx,By,Bz
@@ -345,8 +400,8 @@ class SensorCollection:
         self.addSensor(*sensors)
 
     def __repr__(self):
-        return f"SensorCollection"\
-               f"\n sensor children: N={len(self.sensors)}"\
+        return f"SensorCollection\n "\
+               f"sensor children: N={len(self.sensors)}\n "\
                 "position: x={:.2f}mm, y={:.2f}mm, z={:.2f}mm\n".format(*self.position,) + \
                 "angle: {:.2f} Degrees\n".format(self.angle) + \
                 "axis: x={:.2f}, y={:.2f}, z={:.2f}".format(*self.axis)
@@ -720,73 +775,48 @@ class CircularSensorArray(SensorCollection):
 
 # %% [raw]
 # def f1(N=1, Nelem=5):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     B = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
 #         ANG = csa._get_angles()
 #         POS = csa._get_positions()
 #         AXIS = csa._get_axes()
-#         B.append(getBarray(box, POS=POS, ANG=ANG, AXIS=AXIS))
+#         B.append(getBarray(ds, POS=POS, ANG=ANG, AXIS=AXIS))
 #     #return np.array(B).mean(axis=2)
 #
 #
 # def f2(N=1, Nelem=5):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     ANG = []
 #     AXIS = []
 #     POS = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
 #         POS.append(csa._get_positions())
-#     B = getBarray(box, POS=POS, ANG=csa.angle, AXIS=csa.axis)
+#     B = getBarray(ds, POS=POS, ANG=csa.angle, AXIS=csa.axis)
 #     
 #     #return np.array(B.mean(axis=2))
 #
 #
 # def f3(N=1, Nelem=5):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     B = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
-#         B.append(np.array([s.getB(box) for s in csa.sensors]))
+#         B.append(np.array([s.getB(ds) for s in csa.sensors]))
 #     #return np.array(B)
 #
 #
-#     
 #
 # N=36
 # Nelem=25
-# %time f1(N, Nelem)
-# %time f2(N, Nelem)
-# %time f3(N, Nelem)
-
-# %% [raw]
-# csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
-# rotax = RotationAxis()
-# def getB_from_rotation(input_objs, sensors, sources, rotaxis, start=0, step=1, nsteps=360):
-#     sources = [io for io in input_objs if isSource(io)]
+#
+# csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     
-#     for sens in sensors:
-#         ANG = []
-#         AXIS = []
-#         POS = []
-#         for i in range(nsteps):
-#             for obj in input_objs:
-#                 obj.rotate(angle=i, axis=rotaxis.axis, anchor=rotaxis.position)
-#                 if isinstance(obj, SurfaceSensor):
-#                     POS.append(sens._get_positions())
-#                     AXIS.append(sens._get_axes())
-#                     ANG.append(sens._get_angles())
-#                 else:
-#                     POS.append(sens.position)
-#                     AXIS.append(sens.axis())
-#                     ANG.append(sens.angle)
-#             
-#                 
-#         p=POS.append(csa._get_positions())
-#     B = getBarray(*sources, POS=POS, ANG=, AXIS=)
+#
+# %time f1(N)
+# %time f2(N)
+# %time f3(N)
 
-# %% [raw]
-# ss = SurfaceSensor(Nelem=(30,30), dim=(8,8), pos=(0,0,15), angle=90, axis=(1,0,0))
-# ds = DiscreteSourceBox('data/discrete_source_data.csv')
+# %%
+ds = DiscreteSourceBox('data/discrete_source_data.csv', fill_value=np.nan)
+csa = CircularSensorArray(Rs=0.5, num_of_sensors=4, Nelem=Nelem, start_angle=0, elem_dim=(0.2,0.2))
+# %time record_rotation_array(objs_to_rotate=[csa], sensors=[csa], sources=[ds], step=10, nsteps=36)
