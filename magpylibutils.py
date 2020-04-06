@@ -46,6 +46,31 @@ ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
 # # Functions
 
 # %%
+def isSource(theObject: any) -> bool:
+    """
+    Check is an object is a magnetic source.
+
+    Parameter
+    ---------
+        theObject: any
+            Object to be evaluated if it is a source. Update list when new sources are up
+    Returns
+    -------
+        bool
+    """
+    from magpylib import source
+    sourcesList = (
+        source.magnet.Box,
+        source.magnet.Sphere,
+        source.magnet.Cylinder,
+        source.current.Line,
+        source.current.Circular,
+        source.moment.Dipole,
+        DiscreteSourceBox)
+    return any(isinstance(theObject, src) for src in sourcesList)
+
+
+# %%
 def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
     if len(sources) > 0:
         POS = np.array(POS)
@@ -91,6 +116,61 @@ def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4
         for i,k in enumerate(['x','y','z']):
             df[k] = recenter_df(df[k].values) + recenter[1]
     return DiscreteSourceBox(df, bounds_error=bounds_error, fill_value=fill_value)
+
+
+# %%
+def record_rotation_array(objs_to_rotate, sensors, sources, axis=(0.,0.,1.), anchor=(0.,0.,0.), 
+                         start=0, step=1, nsteps=360):
+    if not isinstance(objs_to_rotate, (tuple,list)):
+        objs_to_rotate = [objs_to_rotate]
+    if not isinstance(sensors, (tuple,list)):
+        sensors = [sensors]
+    if not isinstance(sources, (tuple,list)):
+        sources = [sources]
+    sources = [s for s in sources if isSource(s)]
+
+    scols = [s for s in sensors if isinstance(s, SensorCollection)]
+    regular_sensors = [s for s in sensors if not isinstance(s, SensorCollection)]
+    sensors =  regular_sensors + [s for sc in scols for s in sc.sensors]
+    # record start states
+    start_states=[]
+    for obj in objs_to_rotate:
+        state= dict(position=obj.position, angle=obj.angle, axis=obj.axis)
+        start_states.append(state)
+        obj.rotation_data=pd.Series(dict(positions = np.zeros((nsteps,3)),
+                                         angles = np.zeros(nsteps),
+                                         axes = np.zeros((nsteps,3))
+                                        )
+                                   )
+    #start main loop    
+    for sens_ind,sens in enumerate(sensors):
+        ANG = []; AXIS = [] ; POS = []
+        for i in range(nsteps):
+            for obj in objs_to_rotate:
+                obj.rotate(angle=step, axis=axis, anchor=anchor)
+                obj.rotation_data['positions'][i] = obj.position
+                obj.rotation_data['angles'][i] = obj.angle
+                obj.rotation_data['axes'][i] = obj.axis
+            if isinstance(sens, SurfaceSensor):
+                POS.append(sens._get_positions())
+                AXIS.append(sens._get_axes())
+                ANG.append(sens._get_angles())
+            else:
+                POS.append(sens.position)
+                AXIS.append(sens.axis)
+                ANG.append(sens.angle)
+            
+        B = getBarray(*sources, POS=POS, ANG=ANG, AXIS=AXIS)
+        
+        if isinstance(sens, SurfaceSensor):
+            B = B.mean(axis=1)
+            
+        sens.Barray = np.array(B)
+        
+        for obj,state in zip(objs_to_rotate,start_states):
+            obj.position = state['position']
+            obj.angle = state['angle']
+            obj.axis = state['axis']
 
 
 # %% [markdown]
@@ -139,7 +219,8 @@ class MCollection(Collection):
         self.name = name
         self.sensors = sensors if sensors is not None else []
         self.nonmodelobjs = nonmodelobjs if nonmodelobjs is not None else []
-
+        self.objects = self.sources + self.sensors + self.nonmodelobjs
+        
     def __repr__(self):
         return f"Magpylib Collection\n"\
                f"sources: {self.sources}\n"\
@@ -252,7 +333,7 @@ class Sensor3d(Sensor):
 
 # %%
 class DiscreteSourceBox(Box):
-    def __init__(self, data, bounds_error=None, fill_value=None, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
+    def __init__(self, data, bounds_error=False, fill_value=np.nan, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
         '''
         data : csv file, pandas dataframe, or numpy array
             !!! IMPORTANT !!! columns value must be in this order: x,y,z,Bx,By,Bz
@@ -358,8 +439,8 @@ class SensorCollection:
         self.addSensor(*sensors)
 
     def __repr__(self):
-        return f"SensorCollection"\
-               f"\n sensor children: N={len(self.sensors)}"\
+        return f"SensorCollection\n "\
+               f"sensor children: N={len(self.sensors)}\n "\
                 "position: x={:.2f}mm, y={:.2f}mm, z={:.2f}mm\n".format(*self.position,) + \
                 "angle: {:.2f} Degrees\n".format(self.angle) + \
                 "axis: x={:.2f}, y={:.2f}, z={:.2f}".format(*self.axis)
@@ -477,80 +558,79 @@ class SensorCollection:
 # %% [markdown]
 # # Surface Sensor
 
-# %%
-class SurfaceSensorOld(SensorCollection):
-    def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
-        try:
-            sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
-        except:
-            sensors=[Sensor(pos=(0,0,0))]
-        super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
-        self.update(Nelem=Nelem, dim=dim)
-
-    @property
-    def dimension(self):
-        return self._dimension
-    @dimension.setter
-    def dimension(self, val):
-        self.update(dim=val)
-        
-    @property
-    def Nelem(self):
-        return self._Nelem
-    @Nelem.setter
-    def Nelem(self, val):
-        self.update(Nelem=val)
-        
-    def update(self, pos=None, angle=None, axis=None, dim=None, Nelem=None):
-        if pos is not  None:
-            self.rcs.position = pos
-        if angle is not  None:
-            self.rcs.angle = angle
-        if axis is not  None:
-            self.rcs.axis = axis
-        if dim is None:
-            dim = self._dimension
-        if isinstance(dim, (int,float)):
-            dim = (dim, dim)
-        dim = self._dimension = np.array(dim)
-        if Nelem is None:
-            Nelem = self._Nelem
-        if isinstance(Nelem, (int,float)):
-            n1 = np.int(np.sqrt(Nelem))
-            n2 = np.int(Nelem/n1)
-            Nelem = (n1, n2)
-        self._Nelem = Nelem = np.array(Nelem).astype(int)
-        
-        if Nelem[0]==1 or Nelem[1]==1:
-            dim = self._dimension = np.array([0,0])
-        
-        POS = np.mgrid[-dim[0]/2:dim[0]/2:Nelem[0]*1j,-dim[1]/2:dim[1]/2:Nelem[1]*1j, 0:0:1j].reshape(3,-1).T
-        ANG = np.tile(self.angle, len(POS))
-        AXIS = np.repeat([self.axis], len(POS), axis=0)
-        ANCHOR = np.repeat([[0,0,0]], len(POS), axis=0)
-        posrot = angleAxisRotationV(POS=POS ,ANG=ANG, AXIS=AXIS, ANCHOR=ANCHOR)
-        
-        for i in range(len(posrot)):
-            if i>=len(self.sensors):
-                self.addSensor(Sensor(pos=(i,0,0)))
-            self.sensors[i].position = posrot[i] + self.position
-            self.sensors[i].angle= self.angle
-            self.sensors[i].axis = self.axis
-            i+=1
-        if i<len(self.sensors):
-            self.removeSensor(*self.sensors[i:])
-    
-    def getB(self, *sources):
-        return self.getBarray(*sources).mean(axis=0)
-    
-    def __repr__(self):
-        return f"name: SurfaceSensor"\
-               f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
-               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
-               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
-               f"\n angle: {self.angle:.2f} Degrees"\
-               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
-
+# %% [raw]
+# class SurfaceSensorOld(SensorCollection):
+#     def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
+#         try:
+#             sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
+#         except:
+#             sensors=[Sensor(pos=(0,0,0))]
+#         super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
+#         self.update(Nelem=Nelem, dim=dim)
+#
+#     @property
+#     def dimension(self):
+#         return self._dimension
+#     @dimension.setter
+#     def dimension(self, val):
+#         self.update(dim=val)
+#         
+#     @property
+#     def Nelem(self):
+#         return self._Nelem
+#     @Nelem.setter
+#     def Nelem(self, val):
+#         self.update(Nelem=val)
+#         
+#     def update(self, pos=None, angle=None, axis=None, dim=None, Nelem=None):
+#         if pos is not  None:
+#             self.rcs.position = pos
+#         if angle is not  None:
+#             self.rcs.angle = angle
+#         if axis is not  None:
+#             self.rcs.axis = axis
+#         if dim is None:
+#             dim = self._dimension
+#         if isinstance(dim, (int,float)):
+#             dim = (dim, dim)
+#         dim = self._dimension = np.array(dim)
+#         if Nelem is None:
+#             Nelem = self._Nelem
+#         if isinstance(Nelem, (int,float)):
+#             n1 = np.int(np.sqrt(Nelem))
+#             n2 = np.int(Nelem/n1)
+#             Nelem = (n1, n2)
+#         self._Nelem = Nelem = np.array(Nelem).astype(int)
+#         
+#         if Nelem[0]==1 or Nelem[1]==1:
+#             dim = self._dimension = np.array([0,0])
+#         
+#         POS = np.mgrid[-dim[0]/2:dim[0]/2:Nelem[0]*1j,-dim[1]/2:dim[1]/2:Nelem[1]*1j, 0:0:1j].reshape(3,-1).T
+#         ANG = np.tile(self.angle, len(POS))
+#         AXIS = np.repeat([self.axis], len(POS), axis=0)
+#         ANCHOR = np.repeat([[0,0,0]], len(POS), axis=0)
+#         posrot = angleAxisRotationV(POS=POS ,ANG=ANG, AXIS=AXIS, ANCHOR=ANCHOR)
+#         
+#         for i in range(len(posrot)):
+#             if i>=len(self.sensors):
+#                 self.addSensor(Sensor(pos=(i,0,0)))
+#             self.sensors[i].position = posrot[i] + self.position
+#             self.sensors[i].angle= self.angle
+#             self.sensors[i].axis = self.axis
+#             i+=1
+#         if i<len(self.sensors):
+#             self.removeSensor(*self.sensors[i:])
+#     
+#     def getB(self, *sources):
+#         return self.getBarray(*sources).mean(axis=0)
+#     
+#     def __repr__(self):
+#         return f"name: SurfaceSensor"\
+#                f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
+#                f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+#                f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
+#                f"\n angle: {self.angle:.2f} Degrees"\
+#                f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
 
 # %%
 class SurfaceSensor(RCS):
@@ -634,6 +714,46 @@ class SurfaceSensor(RCS):
 
 
 # %% [markdown]
+# # Streamlines
+
+# %%
+class Streamlines(SurfaceSensor):
+    def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1],
+                 density='auto', arrow_scale=0.1):
+        super().__init__(Nelem=Nelem, dim=dim, pos=pos, angle=angle, axis=axis)
+        self.density = 'auto'
+        self.arrow_scale = arrow_scale
+        
+    def __repr__(self):
+        return f"name: Streamlines"\
+               f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
+               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
+
+
+# %% [markdown]
+# # Surface
+
+# %%
+class Surface(SurfaceSensor):
+    def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1], 
+                 density='auto', arrow_scale=0.1):
+        super().__init__(Nelem=Nelem, dim=dim, pos=pos, angle=angle, axis=axis)
+        self.density = 'auto'
+        self.arrow_scale = arrow_scale
+        
+    def __repr__(self):
+        return f"name: Surface"\
+               f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
+               f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
+               f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
+
+
+# %% [markdown]
 # # Circular Sensor Array
 
 # %%
@@ -693,43 +813,49 @@ class CircularSensorArray(SensorCollection):
 # %time csa.getBarray(box).mean(axis=1)
 
 # %% [raw]
-# def f1(N=1):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# def f1(N=1, Nelem=5):
 #     B = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
 #         ANG = csa._get_angles()
 #         POS = csa._get_positions()
 #         AXIS = csa._get_axes()
-#         B.append(getBarray(box, POS=POS, ANG=ANG, AXIS=AXIS))
+#         B.append(getBarray(ds, POS=POS, ANG=ANG, AXIS=AXIS))
 #     #return np.array(B).mean(axis=2)
 #
 #
-# def f2(N=1):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# def f2(N=1, Nelem=5):
 #     ANG = []
 #     AXIS = []
 #     POS = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
 #         POS.append(csa._get_positions())
-#     B = getBarray(box, POS=POS, ANG=csa.angle, AXIS=csa.axis)
+#     B = getBarray(ds, POS=POS, ANG=csa.angle, AXIS=csa.axis)
 #     
 #     #return np.array(B.mean(axis=2))
 #
 #
-# def f3(N=1):
-#     csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=(5,5), start_angle=180, elem_dim=(0.2,0.2))
+# def f3(N=1, Nelem=5):
 #     B = []
 #     for i in range(N):
 #         csa.rotate(angle=i, axis=(1,2,3))
-#         B.append(np.array([s.getB(box) for s in csa.sensors]))
+#         B.append(np.array([s.getB(ds) for s in csa.sensors]))
 #     #return np.array(B)
 #
 #
+#
+# N=36
+# Nelem=25
+#
+# csa = CircularSensorArray(Rs=2, num_of_sensors=4, Nelem=Nelem, start_angle=180, elem_dim=(0.2,0.2))
 #     
 #
-# N=100
 # %time f1(N)
 # %time f2(N)
 # %time f3(N)
+
+# %%
+ds = DiscreteSourceBox('data/discrete_source_data.csv', fill_value=np.nan)
+csa = CircularSensorArray(Rs=0.5, num_of_sensors=4, Nelem=Nelem, start_angle=0, elem_dim=(0.2,0.2))
+# %time record_rotation_array(objs_to_rotate=[csa], sensors=[csa], sources=[ds], step=10, nsteps=36)
