@@ -424,7 +424,7 @@ def getTraces(*input_objs, sensorsources='from_input', cst=0, color=None, Nver=4
         if isinstance(s, (tuple, list, Collection, SensorCollection, MCollection)):
             if isinstance(s, Collection):
                 parent = s.sources
-            elif if isinstance(s, MCollection):
+            elif isinstance(s, MCollection):
                 parent = s.objects
             tcs = getTraces(*parent, sensorsources=sensorsources, cst=cst, color=color, Nver=Nver, 
                             showhoverdata=showhoverdata, dipolesizeref=dipolesizeref, 
@@ -551,26 +551,25 @@ def displaySystem(*objs, figwidget=False, traces_properties=None, fig_layout=Non
     else:
         fig.show()
 
-
 # %% [markdown]
 # # Testing
 
-# %%
-box = Box(mag=(1,0,1), dim=(12, 10 ,12), pos=(0,0,0))
-cylinder = Cylinder(mag=(0,1,0), dim=(13, 7), pos=(15,0,0))
-sphere = Sphere(mag=(1,1,1), dim=11, pos=(30,0,0))
-line = Line(curr=10, vertices=[(0,-4,0),(0,4,0)], axis=(1,0,0), angle= 45, pos=(0,0,15))
-circular = Circular(curr=-5, dim=10,  pos=(10,0,15), axis=(1,0,0), angle=90)
-dipole = Dipole(moment=(10,1,1), pos=(18,0,15))
-discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(25,0,15))
-coll = Collection(box,cylinder,sphere, line, circular, dipole, discrete_source)
-
-streamlines = Streamlines(Nelem=(5,5), dim=(8,8), pos=(0,0,15), angle=-45, axis=(1,0,0))
-surface = Surface(Nelem=(5,5), dim=(8,8), pos=(0,0,15), angle=-45, axis=(1,0,0))
-sensor = Sensor(pos=(35,0,15))
-scoll = SensorCollection(sensor, surface)
-traces_properties = dict(cst=0.2, sensorsources=[line], sensoraxis='z')
-displaySystem(coll, sensor, streamlines, surface, traces_properties=traces_properties)
+# %% [raw]
+# box = Box(mag=(1,0,1), dim=(12, 10 ,12), pos=(0,0,0))
+# cylinder = Cylinder(mag=(0,1,0), dim=(13, 7), pos=(15,0,0))
+# sphere = Sphere(mag=(1,1,1), dim=11, pos=(30,0,0))
+# line = Line(curr=10, vertices=[(0,-4,0),(0,4,0)], axis=(1,0,0), angle= 45, pos=(0,0,15))
+# circular = Circular(curr=-5, dim=10,  pos=(10,0,15), axis=(1,0,0), angle=90)
+# dipole = Dipole(moment=(10,1,1), pos=(18,0,15))
+# discrete_source = DiscreteSourceBox('data/discrete_source_data.csv', pos=(25,0,15))
+# coll = Collection(box,cylinder,sphere, line, circular, dipole, discrete_source)
+#
+# streamlines = Streamlines(Nelem=(5,5), dim=(8,8), pos=(0,0,15), angle=-45, axis=(1,0,0))
+# surface = Surface(Nelem=(5,5), dim=(8,8), pos=(0,0,15), angle=-45, axis=(1,0,0))
+# sensor = Sensor(pos=(35,0,15))
+# scoll = SensorCollection(sensor, surface)
+# traces_properties = dict(cst=0.2, sensorsources=[line], sensoraxis='z')
+# displaySystem(coll, sensor, streamlines, surface, traces_properties=traces_properties)
 
 # %% [raw]
 # sensor1 = Sensor(pos=(-10,0,0))

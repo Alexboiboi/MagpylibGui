@@ -173,23 +173,6 @@ def record_rotation_array(objs_to_rotate, sensors, sources, axis=(0.,0.,1.), anc
             obj.axis = state['axis']
 
 
-# %% [markdown]
-# ## MCollection/MDataset
-
-# %%
-SENIS_file_params = dict(usecols=[1,2,3,4,5,6],
-                         names=['Bx','Bz','By','x','z','y'],
-                         factors=[1,-1,1,1,1,-1],
-                         delimiter=',',
-                         skiprows=1)
-           
-ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
-                         names=['x','y','z','Bx','By','Bz'],
-                         factors=[1000,1000,1000,1000,1000,1000],
-                         delimiter=' ',
-                         skiprows=2)
-
-
 # %%
 def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4,5], 
               names=['x','z','y','Bx','By','Bz'], delimiter=',', skiprows=1,
@@ -208,6 +191,23 @@ def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4
         for i,k in enumerate(['x','y','z']):
             df[k] = recenter_df(df[k].values) + recenter[1]
     return DiscreteSourceBox(df, bounds_error=bounds_error, fill_value=fill_value)
+
+
+# %% [markdown]
+# ## MCollection/MDataset
+
+# %%
+SENIS_file_params = dict(usecols=[1,2,3,4,5,6],
+                         names=['Bx','Bz','By','x','z','y'],
+                         factors=[1,-1,1,1,1,-1],
+                         delimiter=',',
+                         skiprows=1)
+           
+ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
+                         names=['x','y','z','Bx','By','Bz'],
+                         factors=[1000,1000,1000,1000,1000,1000],
+                         delimiter=' ',
+                         skiprows=2)
 
 
 # %%
@@ -855,7 +855,7 @@ class CircularSensorArray(SensorCollection):
 # %time f2(N)
 # %time f3(N)
 
-# %%
-ds = DiscreteSourceBox('data/discrete_source_data.csv', fill_value=np.nan)
-csa = CircularSensorArray(Rs=0.5, num_of_sensors=4, Nelem=Nelem, start_angle=0, elem_dim=(0.2,0.2))
+# %% [raw]
+# ds = DiscreteSourceBox('data/discrete_source_data.csv', fill_value=np.nan)
+# csa = CircularSensorArray(Rs=0.5, num_of_sensors=4, Nelem=Nelem, start_angle=0, elem_dim=(0.2,0.2))
 # %time record_rotation_array(objs_to_rotate=[csa], sensors=[csa], sources=[ds], step=10, nsteps=36)
