@@ -186,7 +186,7 @@ def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=(5,5), showlegend=True,
         if len(dim)==2:
             dim = np.array([dim[0],dim[1],np.mean(dim)/5])
         else:
-            dim = np.array(dim)
+            dim = np.array(dim[:3])
     except:
         dim = np.array([dim, dim, dim])
         

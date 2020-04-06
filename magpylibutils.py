@@ -201,11 +201,50 @@ class RotationAxis(RCS):
         self.name = name
         
     def __repr__(self):
-        return f"{self.name}\n" + \
-                "length: {:.2f}mm\n".format(self.dimension) + \
-                "position: x={:.2f}mm, y={:.2f}mm, z={:.2f}mm\n".format(*self.position,) + \
-                "angle: {:.2f} Degrees\n".format(self.angle) + \
-                "axis: x={:.2f}, y={:.2f}, z={:.2f}".format(*self.axis)
+        return f"{self.name}"\
+               f"\n length: a={self.position[0]:.2f}mm, b={self.position[1]:.2f}mm, c={self.position[2]:.2f}mm"\
+               f"\n position: x={self.position[0]:.2f}mm, y={self.position[1]:.2f}mm, z={self.position[2]:.2f}mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x={self.axis[0]:.2f}, y={self.axis[1]:.2f}, z={self.axis[2]:.2f}"
+
+
+# %% [markdown]
+# # Sensor 3d
+
+# %%
+class Sensor3d(Sensor):
+    def __init__(self, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.), dim=1., name=None):
+        super().__init__(pos=pos, angle=angle, axis=axis)
+        self._dimension = self._set_dim(dim)
+        if name is None:
+            name = 'Sensor3d_' +str(id(self))
+        self.name = name
+    
+    @property
+    def dimension(self):
+        return self._dimension
+    
+    @dimension.setter
+    def dimension(self,val):
+        self._dimension = self._set_dim(val)
+        
+    def _set_dim(self,dim):
+        try:
+            if len(dim)==2:
+                dim = np.array([dim[0],dim[1],np.mean(dim)/5])
+            else:
+                dim = np.array(dim[:3])
+        except:
+            dim = np.array([dim, dim, dim])
+        return dim
+            
+    def __repr__(self):
+        return f"{self.name}"\
+               f"\n dimension: a={self.position[0]:.2f}mm, b={self.position[1]:.2f}mm, c={self.position[2]:.2f}mm"\
+               f"\n position: x={self.position[0]:.2f}mm, y={self.position[1]:.2f}mm, z={self.position[2]:.2f}mm"\
+               f"\n angle: {self.angle:.2f} Degrees"\
+               f"\n axis: x={self.axis[0]:.2f}, y={self.axis[1]:.2f}, z={self.axis[2]:.2f}"
+
 
 
 # %% [markdown]
