@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -46,31 +46,6 @@ ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
 # # Functions
 
 # %%
-def isSource(theObject: any) -> bool:
-    """
-    Check is an object is a magnetic source.
-
-    Parameter
-    ---------
-        theObject: any
-            Object to be evaluated if it is a source. Update list when new sources are up
-    Returns
-    -------
-        bool
-    """
-    from magpylib import source
-    sourcesList = (
-        source.magnet.Box,
-        source.magnet.Sphere,
-        source.magnet.Cylinder,
-        source.current.Line,
-        source.current.Circular,
-        source.moment.Dipole,
-        DiscreteSourceBox)
-    return any(isinstance(theObject, src) for src in sourcesList)
-
-
-# %%
 def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
     if len(sources) > 0:
         POS = np.array(POS)
@@ -92,9 +67,7 @@ def getBarray(*sources, POS=(0.,0.,0.), ANG=0., AXIS=(0.,0.,1.)):
         return Brot.reshape(shape)
     else:
         import warnings
-        warnings.warn(
-        "no magnetic source"
-        "returning [[0,0,0]]", RuntimeWarning)
+        warnings.warn("no magnetic source, returning [[0,0,0]]", RuntimeWarning)
         return np.array([[0,0,0]])
 
 
@@ -193,6 +166,72 @@ def read_file(filename, recenter=None, factors=(1,1,1,1,1,1), usecols=[0,1,2,3,4
     return DiscreteSourceBox(df, bounds_error=bounds_error, fill_value=fill_value)
 
 
+# %%
+def isSource(theObject: any) -> bool:
+    """
+    Check is an object is a magnetic source.
+
+    Parameter
+    ---------
+        theObject: any
+            Object to be evaluated if it is a source. Update list when new sources are up
+    Returns
+    -------
+        bool
+    """
+    from magpylib import source
+    sourcesList = (
+        source.magnet.Box,
+        source.magnet.Sphere,
+        source.magnet.Cylinder,
+        source.current.Line,
+        source.current.Circular,
+        source.moment.Dipole,
+        DiscreteSourceBox)
+    return any(isinstance(theObject, src) for src in sourcesList)
+
+
+# %%
+def isSensor(theObject: any) -> bool:
+    """
+    Check is an object is a sensor.
+
+    Parameter
+    ---------
+        theObject: any
+            Object to be evaluated if it is a sensor. Update list when new sensors are up
+    Returns
+    -------
+        bool
+    """
+    sensorsList = (
+        Sensor,
+        Sensor3d,
+        SurfaceSensor)
+    return any(isinstance(theObject, src) for src in sensorsList)
+
+
+# %%
+def isNonModelObj(theObject: any) -> bool:
+    """
+    Check is an object is a non-model object.
+
+    Parameter
+    ---------
+        theObject: any
+            Object to be evaluated if it is a non-model object. Update list when new non-model object are up
+    Returns
+    -------
+        bool
+    """
+    from magpylib import source
+    nonmodelobjList = (
+        NonModelObj,
+        RotationAxis
+    )
+    return any(isinstance(theObject, src) for src in nonmodelobjList)
+
+
 # %% [markdown]
 # ## MCollection/MDataset
 
@@ -211,7 +250,7 @@ ANSYS_file_params = dict(usecols=[0,1,2,4,5,6],
 
 
 # %%
-class MCollection(Collection):
+class MCollectionold(Collection):
     def __init__(self, sources=None, sensors=None, nonmodelobjs=None, name=None):
         super().__init__(*sources)
         if name is None:
@@ -219,10 +258,67 @@ class MCollection(Collection):
         self.name = name
         self.sensors = sensors if sensors is not None else []
         self.nonmodelobjs = nonmodelobjs if nonmodelobjs is not None else []
-        self.objects = self.sources + self.sensors + self.nonmodelobjs
+   
+    @property
+    def objects(self):
+        return self.sources + self.sensors + self.nonmodelobjs
+    
+    def __repr__(self):
+        return f"Magpylib Collection\n"\
+               f"sources: {self.sources}\n"\
+               f"sensors: {self.sensors}\n"\
+               f"non model objects: {self.nonmodelobjs}\n"
+
+
+# %%
+class MCollection(Collection):
+    def __init__(self, *objs, name=None):
+        super().__init__()
+        if name is None:
+            name = 'Collection_' +str(id(self))
+        self.name = name
+        self._sources = []
+        self._sensors = []
+        self._nonmodelobjs = []
+        self.add_objects(*objs)
+    
+    def add_objects(self, *objs):
+        self._sources += [o for o in objs if isSource(o)]
+        self._sensors += [o for o in objs if isSensor(o)]
+        self._nonmodelobjs += [o for o in objs if isNonModelObj(o)]
+    
+    @property
+    def sources(self):
+        return self._sources
+    @sources.setter
+    def sources(self, objs):
+        self._sources = [o for o in objs if isSource(o)]
+        
+    @property
+    def sensors(self):
+        return self._sensors
+    @sensors.setter
+    def sensors(self, objs):
+        self._sensors = [o for o in objs if isSensor(o)]
+    
+    @property
+    def nonmodelobjs(self):
+        return self._nonmodelobjs
+    @nonmodelobjs.setter
+    def nonmodelobjs(self, objs):
+        self._nonmodelobjs = [o for o in objs if isNonModelObj(o)]
+        
+    @property
+    def objects(self):
+        return self.sources + self.sensors + self.nonmodelobjs
+    
+    def __getitem__(self, i):
+        if isinstance(i, int):
+            return self.objects[i]
         
     def __repr__(self):
         return f"Magpylib Collection\n"\
+               f"name: {self.name}\n"\
                f"sources: {self.sources}\n"\
                f"sensors: {self.sensors}\n"\
                f"non model objects: {self.nonmodelobjs}\n"
@@ -243,15 +339,19 @@ class MDataset:
         return [d.sources for d in self.collections]
     
     def add_collections(self, *collections):
-        for d in collections:
-            self.collections.append(d)
+        for coll in collections:
+            assert isinstance(coll, MCollection), f'''{coll} must be a MCollection'''
+            self.collections.append(coll)
             
     def __iter__(self):
         for s in self.collections:
             yield s
 
     def __getitem__(self, i):
-        return self.collections[i]
+        if isinstance(i, int):
+            return self.collections[i]
+        else:
+            return self.collections[self.names.index(i)]
     
     def __len__(self):
         return len(self.collections)
@@ -270,16 +370,26 @@ class MDataset:
 
 
 # %% [markdown]
-# # Rotation Axis
+# # Non-model objects
 
 # %%
-class RotationAxis(RCS):
-    def __init__(self, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.), dim=10., name=None):
+class NonModelObj(RCS):
+    def __init__(self, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.)):
         super().__init__(position=pos, angle=angle, axis=axis)
-        self.dimension = dim
+
+
+# %% [markdown]
+# ## Rotation Axis
+
+# %%
+class RotationAxis(NonModelObj):
+    def __init__(self, pos=(0.,0.,0.), angle=0., axis=(0.,0.,1.), dim=10., name=None):
+        super().__init__(pos=pos, angle=angle, axis=axis)
         if name is None:
             name = 'RotationAxis_' +str(id(self))
         self.name = name
+        self.dimension = dim
+        
         
     def __repr__(self):
         return f"{self.name}"\
