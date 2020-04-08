@@ -426,6 +426,8 @@ def getTraces(*input_objs, sensorsources='from_input', cst=0, color=None, Nver=4
                 parent = s.sources
             elif isinstance(s, MCollection):
                 parent = s.objects
+            else:
+                parent = s
             tcs = getTraces(*parent, sensorsources=sensorsources, cst=cst, color=color, Nver=Nver, 
                             showhoverdata=showhoverdata, dipolesizeref=dipolesizeref, 
                             opacity=opacity, showlegend=showlegend,
