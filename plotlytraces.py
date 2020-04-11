@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -25,6 +25,7 @@ import plotly.graph_objects as go
 from plotly.figure_factory import create_streamline
 
 from magpylib._lib.mathLib import angleAxisRotation
+from magpylib._lib.mathLib_vector import angleAxisRotationV
 from magpylib._lib.classes.magnets import Box, Cylinder, Sphere
 from magpylib._lib.classes.currents import Line, Circular
 from magpylib._lib.classes.moments import Dipole
@@ -32,8 +33,8 @@ from magpylib._lib.classes.sensor import Sensor
 from magpylib._lib.classes.collection import Collection
 
 import magpylibutils
-from magpylibutils import (DiscreteSourceBox, SensorCollection, SurfaceSensor, MCollection,
-                           RotationAxis, 
+from magpylibutils import (DiscreteSourceBox, SensorCollection, SurfaceSensor, MCollection, MDataset,
+                           RotationAxis, STLobj,
                            Streamlines, Surface, 
                            isSource)
 
@@ -41,6 +42,8 @@ from magpylibutils import (DiscreteSourceBox, SensorCollection, SurfaceSensor, M
 SENSORSIZE = 1
 DIPOLESIZEREF = 5
 DISCRETESOURCE_OPACITY = 0.1
+NORTH_COLOR = 'red' # 'magenta'
+SOUTH_COLOR = 'blue' # 'turquoise'
 
 
 # %% [markdown]
@@ -59,8 +62,12 @@ def _getIntensity(points, mag, pos):
     else:
         return points*0
 
-def _getColorscale(cst=0.1):
-    return [[0, 'turquoise'], [0.5*(1-cst), 'turquoise'],[0.5*(1+cst), 'magenta'], [1, 'magenta']]
+def _getColorscale(cst=0.1, north_color=None, south_color=None):
+    if north_color is None:
+        north_color = NORTH_COLOR
+    if south_color is None:
+        south_color = SOUTH_COLOR
+    return [[0, south_color], [0.5*(1-cst), south_color],[0.5*(1+cst), north_color], [1, north_color]]
 
 def repnan(a):
     '''replaces nan values from a numpy array by None'''
@@ -70,7 +77,7 @@ def repnan(a):
 
 
 # %% [markdown]
-# # Other definitions
+# # Non model definitions
 
 # %%
 def make_RotationAxis(rotAxis, name='Rotation Axis', **kwargs):
@@ -94,9 +101,61 @@ def make_RotationAxis(rotAxis, name='Rotation Axis', **kwargs):
     return scatter  
 
 
+# %%
+def make_STL(stlobj, flatshading=True, color=None, **kwargs):
+    
+    POS = stlobj.vertices*stlobj.scale_factor
+    ANG = np.tile(stlobj.angle, len(POS))
+    AXIS = np.repeat([np.array(stlobj.axis)], len(POS), axis=0)
+    ANCHOR = np.repeat([np.array((0,0,0))], len(POS), axis=0)
+    vertices_rotated = angleAxisRotationV(POS, ANG, AXIS, ANCHOR) + np.array(stlobj.position)
+    x, y, z = vertices_rotated.T
+    I,J,K = stlobj.ijk
+    colorscale= [[0, color], [1, color]]  
+    trace = go.Mesh3d(x=x,y=y,z=z, i=I,j=J,k=K,
+            color=color,
+            #colorscale=colorscale,
+            flatshading=flatshading)
+    trace.update(**kwargs)
+    return trace
+
+
 # %% [markdown]
-# # Sources definitions
-#
+# # Sensors definitions
+
+# %% [markdown]
+# ## Sensor
+
+# %%
+def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=1, showlegend=True, **kwargs):
+    box = go.Mesh3d(
+        i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
+        j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
+        k = np.array([0, 7, 2, 3, 6, 7, 1, 2, 5, 5, 7, 6]),
+        showscale=False, showlegend=showlegend,
+        name='3d sensor'
+    )
+    try:
+        if len(dim)==2:
+            dim = np.array([dim[0],dim[1],np.mean(dim)/5])
+        else:
+            dim = np.array(dim[:3])
+    except:
+        dim = np.array([dim, dim, dim])
+        
+    dd = 0.8 # shape modifier 
+    x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
+    y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
+    z = np.array([-1, -1, -1, -1, 1, 1, 1, 1])*0.5*dim[2]+pos[2]
+    points = np.array([x,y,z])
+    
+    if angle!=0:
+        points = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
+    
+    box.x , box.y, box.z = points
+    box.update(**kwargs)
+    return box
+
 
 # %% [markdown]
 # ## Surface/Streamlines
@@ -161,38 +220,8 @@ def make_Streamlines(surfsens, density='auto', arrow_scale=0.1, sensorsources=No
 
 
 # %% [markdown]
-# ## Sensor
-
-# %%
-def makeSensor(pos = (0,0,0), angle=0, axis=(0,0,1), dim=1, showlegend=True, **kwargs):
-    box = go.Mesh3d(
-        i = np.array([7, 0, 0, 0, 4, 4, 2, 6, 4, 0, 3, 7]),
-        j = np.array([3, 4, 1, 2, 5, 6, 5, 5, 0, 1, 2, 2]),
-        k = np.array([0, 7, 2, 3, 6, 7, 1, 2, 5, 5, 7, 6]),
-        showscale=False, showlegend=showlegend,
-        name='3d sensor'
-    )
-    try:
-        if len(dim)==2:
-            dim = np.array([dim[0],dim[1],np.mean(dim)/5])
-        else:
-            dim = np.array(dim[:3])
-    except:
-        dim = np.array([dim, dim, dim])
-        
-    dd = 0.8 # shape modifier 
-    x = np.array([-1, -1, 1, 1, -dd*1, -dd*1, dd*1, dd*1])*0.5*dim[0]+pos[0]
-    y = np.array([-1, 1, 1, -1, -dd*1, dd*1, dd*1, -dd*1])*0.5*dim[1]+pos[1]
-    z = np.array([-1, -1, -1, -1, 1, 1, 1, 1])*0.5*dim[2]+pos[2]
-    points = np.array([x,y,z])
-    
-    if angle!=0:
-        points = np.array([angleAxisRotation(p, angle, axis, anchor=pos) for p in points.T]).T
-    
-    box.x , box.y, box.z = points
-    box.update(**kwargs)
-    return box
-
+# # Sources definitions
+#
 
 # %% [markdown]
 # ## Discrete Box
@@ -422,10 +451,10 @@ def getTraces(*input_objs, sensorsources='from_input', cst=0, color=None, Nver=4
     traces=[]
     for s in input_objs:
         if isinstance(s, (tuple, list, Collection, SensorCollection, MCollection)):
-            if isinstance(s, Collection):
-                parent = s.sources
-            elif isinstance(s, MCollection):
+            if isinstance(s, MCollection):
                 parent = s.objects
+            elif isinstance(s, Collection):
+                parent = s.sources
             else:
                 parent = s
             tcs = getTraces(*parent, sensorsources=sensorsources, cst=cst, color=color, Nver=Nver, 
@@ -526,6 +555,8 @@ def getTrace(input_obj, sensorsources=None, cst=0, color=None, Nver=40,
                                **kwargs)
     elif isinstance(s,RotationAxis):
         trace = make_RotationAxis(s, **kwargs)
+    elif isinstance(s,STLobj):
+        trace = make_STL(s, **kwargs)
     else:
         trace =  None
     
