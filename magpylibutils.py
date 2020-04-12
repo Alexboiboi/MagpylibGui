@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.4.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -970,6 +970,34 @@ class CircularSensorArray(SensorCollection):
                      Nelem = Nelem
                     )
 
+
+# %% [markdown]
+# # Other Classes
+
+# %% [markdown]
+# ## Rotation Data
+
+# %%
+class RotationData(MCollection):
+    def __init__(self, *objs, name=None):
+        super().__init_(*objs)
+        if name is None:
+            name = 'Collection_' +str(id(self))
+        self.name = name
+        self._data=[{} for o in self.objects]
+        
+    def set_rotation_data(obj, data):
+        self._data[self.objects.index(obj)] = data
+        
+    def get_rotation_data(obj):
+        self._data[self.objects.index(obj)]
+        
+    def getBarray(sensor):
+        self._data[self.objects.index(sensor)]['B_array']
+    
+    @property
+    def data(self):
+        return self._data
 
 # %% [markdown]
 # # Testing
