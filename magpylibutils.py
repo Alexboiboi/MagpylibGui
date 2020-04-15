@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -140,7 +140,7 @@ def record_rotation_array(objs_to_rotate, sensors, sources, axis=(0.,0.,1.), anc
     # record start states
     start_states=[]
     rotating_sources = []
-    virtual_sensors = [Sensor() for s in sources] # when a source is rotating, the sensor positions have to be calculated relatively
+    virtual_sensors = [Sensor() ] 
     non_rotating_sources = [s for s in sources if s not in objs_to_rotate]
     for obj in objs_to_rotate:
         state= dict(position=obj.position, angle=obj.angle, axis=obj.axis)
@@ -158,10 +158,13 @@ def record_rotation_array(objs_to_rotate, sensors, sources, axis=(0.,0.,1.), anc
             obj.rotate(angle=start, axis=axis, anchor=anch)
     #start main loop    
     for sens_ind,sens in enumerate(sensors):
-        for vs in virtual_sensors:
-            vs.axis = sens.axis
-            vs.angle = sens.angle
-            vs.position = sens.position
+        virtual_sensors = [] # when a source is rotating, the sensor positions have to be calculated relatively
+        for s in sources:
+            if isinstance(sens, SurfaceSensor):
+                vs = SurfaceSensor(pos=sens.position, angle=sens.angle, axis=sens.axis, Nelem=sens.Nelem, dim=sens.dim)
+            else:
+                vs = Sensor(pos=sens.position, angle=sens.angle, axis=sens.axis)
+            virtual_sensors.append(vs)
         ANG_list = []; AXIS_list = [] ; POS_list = []
         for i in range(nsteps):
             for obj,anch in zip(objs_to_rotate,anchors):
@@ -171,7 +174,7 @@ def record_rotation_array(objs_to_rotate, sensors, sources, axis=(0.,0.,1.), anc
                 obj.rotate(angle=step, axis=axis, anchor=anch)
             ANG = []; AXIS = [] ; POS = []
             for so,vs in zip(sources, virtual_sensors):
-                if isinstance(sens, SurfaceSensor):
+                if isinstance(vs, SurfaceSensor):
                     POS.append(vs._get_positions())
                     AXIS.append(vs._get_axes())
                     ANG.append(vs._get_angles())
@@ -395,80 +398,6 @@ class Sensor3d(Sensor):
 
 # %% [markdown]
 # ## Surface Sensor
-
-# %% [raw] jupyter={"source_hidden": true}
-# class SurfaceSensorOld(SensorCollection):
-#     def __init__(self, Nelem=(3,3), dim=(0.2,0.2), pos=[0, 0, 0], angle=0, axis=[0, 0, 1]):
-#         try:
-#             sensors=[Sensor(pos=(i,0,0)) for i in range(Nelem[0]*Nelem[1])]
-#         except:
-#             sensors=[Sensor(pos=(0,0,0))]
-#         super().__init__(*sensors, pos=pos, angle=angle, axis=axis)
-#         self.update(Nelem=Nelem, dim=dim)
-#
-#     @property
-#     def dimension(self):
-#         return self._dimension
-#     @dimension.setter
-#     def dimension(self, val):
-#         self.update(dim=val)
-#         
-#     @property
-#     def Nelem(self):
-#         return self._Nelem
-#     @Nelem.setter
-#     def Nelem(self, val):
-#         self.update(Nelem=val)
-#         
-#     def update(self, pos=None, angle=None, axis=None, dim=None, Nelem=None):
-#         if pos is not  None:
-#             self.rcs.position = pos
-#         if angle is not  None:
-#             self.rcs.angle = angle
-#         if axis is not  None:
-#             self.rcs.axis = axis
-#         if dim is None:
-#             dim = self._dimension
-#         if isinstance(dim, (int,float)):
-#             dim = (dim, dim)
-#         dim = self._dimension = np.array(dim)
-#         if Nelem is None:
-#             Nelem = self._Nelem
-#         if isinstance(Nelem, (int,float)):
-#             n1 = np.int(np.sqrt(Nelem))
-#             n2 = np.int(Nelem/n1)
-#             Nelem = (n1, n2)
-#         self._Nelem = Nelem = np.array(Nelem).astype(int)
-#         
-#         if Nelem[0]==1 or Nelem[1]==1:
-#             dim = self._dimension = np.array([0,0])
-#         
-#         POS = np.mgrid[-dim[0]/2:dim[0]/2:Nelem[0]*1j,-dim[1]/2:dim[1]/2:Nelem[1]*1j, 0:0:1j].reshape(3,-1).T
-#         ANG = np.tile(self.angle, len(POS))
-#         AXIS = np.repeat([self.axis], len(POS), axis=0)
-#         ANCHOR = np.repeat([[0,0,0]], len(POS), axis=0)
-#         posrot = angleAxisRotationV(POS=POS ,ANG=ANG, AXIS=AXIS, ANCHOR=ANCHOR)
-#         
-#         for i in range(len(posrot)):
-#             if i>=len(self.sensors):
-#                 self.addSensor(Sensor(pos=(i,0,0)))
-#             self.sensors[i].position = posrot[i] + self.position
-#             self.sensors[i].angle= self.angle
-#             self.sensors[i].axis = self.axis
-#             i+=1
-#         if i<len(self.sensors):
-#             self.removeSensor(*self.sensors[i:])
-#     
-#     def getB(self, *sources):
-#         return self.getBarray(*sources).mean(axis=0)
-#     
-#     def __repr__(self):
-#         return f"name: SurfaceSensor"\
-#                f"\n surface elements: Nx={self.Nelem[0]}, Ny={self.Nelem[1]}"\
-#                f"\n dimension x: {self.dimension[0]:.2f}, mm, y: {self.dimension[1]:.2f}, mm"\
-#                f"\n position x: {self.position[0]:.2f}, mm, y: {self.position[1]:.2f}, mm z: {self.position[2]:.2f} mm"\
-#                f"\n angle: {self.angle:.2f} Degrees"\
-#                f"\n axis: x: {self.axis[0]:.2f}, y: {self.axis[1]:.2f}, z: {self.axis[2]:.2f}"
 
 # %%
 class SurfaceSensor(RCS):
