@@ -928,6 +928,51 @@ class RotationData(MCollection):
     def data(self):
         return self._data
 
+
+# %% [markdown]
+# ## Rotation Array
+
+# %%
+class RotationArray(MCollection):
+    def __init__(self, objs_to_rotate=None, sensors=None, sources=None,
+                 axis=(0.0, 0.0, 1.0), anchors=(0.0, 0.0, 0.0),
+                 theta_start_deg=0, theta_step_deg=1, theta_end_deg=360, theta_offset_deg=0, name=None):
+        if not isinstance(objs_to_rotate, (tuple,list)):
+            objs_to_rotate = [objs_to_rotate]
+        if not isinstance(sensors, (tuple,list)):
+            sensors = [sensors]
+        if not isinstance(sources, (tuple,list)):
+            sources = [sources]
+        objs = list(set(objs_to_rotate+sensors+sources))
+        super().__init__(*objs)
+        self.objs_to_rotate = objs_to_rotate
+        self.axis = axis
+        self.anchors = anchors
+        self.theta_start_deg = theta_start_deg
+        self.theta_offset_deg = theta_offset_deg
+        self.theta_step_deg = theta_step_deg
+        self.theta_end_deg = theta_end_deg
+        theta_deg = np.arange(0,360,theta_step_deg)
+        
+        if name is None:
+            name = 'RotationArray' +str(id(self))
+        self.name = name
+    @property
+    def theta_deg(self):
+        return np.arange(self.theta_start_deg, self.theta_end_deg, self.theta_step_deg)
+                         
+    def record(self, axis=None, anchors=None,
+              theta_start_deg=None, theta_end_deg=None, theta_step_deg=None, theta_offset_deg=None, **kwargs):
+        self.axis = self.axis if axis is None else axis
+        self.anchors  = self.anchors if anchors is None else anchors
+        self.theta_end_deg = self.theta_end_deg if theta_end_deg is None else theta_end_deg
+        self.theta_start_deg = self.theta_start_deg if theta_start_deg is None else theta_start_deg
+        self.theta_offset_deg = self.theta_offset_deg if theta_offset_deg is None else theta_offset_deg
+        self.theta_step_deg = self.theta_step_deg if theta_step_deg is None else theta_step_deg
+        record_rotation_array(objs_to_rotate=self.objs_to_rotate, sensors=self.sensors, sources=self.sources, 
+                          axis=self.axis, anchors=self.anchors,
+                          start=self.theta_start_deg+theta_offset_deg, step=self.theta_step_deg, nsteps=len(self.theta_deg))
+
 # %% [markdown]
 # # Testing
 
