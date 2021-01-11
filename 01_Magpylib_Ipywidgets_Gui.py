@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.5.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -365,7 +365,7 @@ def update_sensor(sensor_id):
         if sp['sensor_type'] == 'hall-3d':
             tm = sp['trace']
         with figmag.batch_update():
-            tm.update(getTrace(sp['magpy_sensor'], dimension=w['sensorsize'].value, name=sp['trace'].name))
+            tm.update(getTrace(sp['magpy_sensor'], sensorsize=w['sensorsize'].value, name=sp['trace'].name))
             if rb != 'record B':
                 x,y,z = pos
                 bt = sensors[sensor_id]['Brecord_trace3d']
