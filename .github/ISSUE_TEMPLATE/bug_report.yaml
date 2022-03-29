@@ -10,7 +10,7 @@ body:
     id: version
     attributes:
       label: Magpylib version
-      placeholder: What version of Magpylib are you running?
+      description: What version of Magpylib are you running?
       options:
         - 4.x (Latest)   
         - 3.x
@@ -22,8 +22,7 @@ body:
     id: what-happened
     attributes:
       label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
+      placeholder: Tell us what you see! Also tell us, what did you expect to happen?
       value: "A bug happened!"
     validations:
       required: true
