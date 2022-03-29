@@ -9,13 +9,15 @@ body:
   - type: dropdown
     id: version
     attributes:
-      label: Version
+      label: Magpylib version
       description: What version of Magpylib are you running?
       options:
         - 4.x (Latest)   
         - 3.x
         - 2.x
         - 1.x
+    validations:
+      required: true
   - type: textarea
     id: what-happened
     attributes:
