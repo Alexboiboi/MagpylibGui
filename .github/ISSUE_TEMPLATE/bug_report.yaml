@@ -43,4 +43,6 @@ body:
     id: addition-context
     attributes:
       label: Additional context
-      placeholder: "OS: [e.g. Linux 32bit], IDE: [e.g. Spyder, PyCharm]"
+      placeholder: |
+        "OS: [e.g. Linux 32bit]"
+        "IDE: [e.g. Spyder, PyCharm]"
