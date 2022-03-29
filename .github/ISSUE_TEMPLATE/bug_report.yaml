@@ -23,7 +23,6 @@ body:
     attributes:
       label: What happened?
       placeholder: Tell us what you see! Also tell us, what did you expect to happen?
-      value: "A bug happened!"
     validations:
       required: true
   - type: textarea
