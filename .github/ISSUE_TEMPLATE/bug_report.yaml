@@ -10,7 +10,7 @@ body:
     id: version
     attributes:
       label: Magpylib version
-      description: What version of Magpylib are you running?
+      placeholder: What version of Magpylib are you running?
       options:
         - 4.x (Latest)   
         - 3.x
@@ -33,11 +33,3 @@ body:
       label: Code example
       description: Please copy and paste aomplete, minimal, self-contained example code that reproduces the issue. This will be automatically formatted into code, so no need for backticks.
       render: python
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
-      options:
-        - label: I agree to follow this project's Code of Conduct
-          required: true
