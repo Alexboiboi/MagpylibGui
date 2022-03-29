@@ -31,6 +31,13 @@ body:
     attributes:
       label: Code example
       description: A complete, minimal, self-contained example code that reproduces the issue. This will be automatically formatted into code, so no need for backticks.
+      placeholder: |
+        import numpy as np
+        import magpylib as magpy
+        
+        cuboid = magpy.magnet.Cuboid((0,0,1000), (1,1,1))
+        cuboid.move(np.linspace((0,0,0), (0,0,10), 11), start=0)
+        cuboid.show()
       render: python
   - type: textarea
     id: addition-context
