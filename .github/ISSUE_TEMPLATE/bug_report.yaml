@@ -1,5 +1,5 @@
-name: Bug Report
-description: File a bug report
+name: Report a problem 🐛
+description: Problem reports are for when something behaves incorrectly, or differently from how you'd expect.
 labels: ["bug"]
 body:
   - type: markdown
@@ -12,10 +12,11 @@ body:
       label: Magpylib version
       description: What version of Magpylib are you running?
       options:
-        - 4.x (Latest)   
+        - 4.x (Latest)
         - 3.x
         - 2.x
         - 1.x
+        - Unreleased
     validations:
       required: true
   - type: textarea
@@ -35,11 +36,11 @@ body:
       placeholder: |
         import numpy as np
         import magpylib as magpy
-        
+
         cuboid = magpy.magnet.Cuboid((0,0,1000), (1,1,1))
         cuboid.move(np.linspace((0,0,0), (0,0,10), 11), start=0)
         cuboid.show()
-      render: python
+      render: Python
   - type: textarea
     id: addition-context
     attributes:
