@@ -6,3 +6,10 @@ body:
     attributes:
       value: |
         Thanks for participating in the Magpylib community
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What is your question?
+      description: We try to answer your questions about magnetic Systems and Magpylib
+    validations:
+      required: true
