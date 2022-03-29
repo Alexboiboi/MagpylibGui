@@ -30,7 +30,7 @@ body:
     id: code-example
     attributes:
       label: Code example
-      description: "Please copy and paste aomplete, minimal, self-contained example code that reproduces the issue. This will be automatically formatted into code, so no need for backticks."
+      description: Please copy and paste aomplete, minimal, self-contained example code that reproduces the issue. This will be automatically formatted into code, so no need for backticks.
       render: python
   - type: textarea
     id: addition-context
