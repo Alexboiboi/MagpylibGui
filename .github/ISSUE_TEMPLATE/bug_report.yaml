@@ -24,22 +24,12 @@ body:
       label: Version
       description: What version of Magpylib are you running?
       options:
-        - 1.x
-        - 2.x
+        - 4.x (Latest)   
         - 3.x
-        - 4.x (Default)   
+        - 2.x
+        - 1.x
     validations:
       required: true
-  - type: dropdown
-    id: browsers
-    attributes:
-      label: What browsers are you seeing the problem on?
-      multiple: true
-      options:
-        - Firefox
-        - Chrome
-        - Safari
-        - Microsoft Edge
   - type: textarea
     id: logs
     attributes:
