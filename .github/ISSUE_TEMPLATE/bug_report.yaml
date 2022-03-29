@@ -30,7 +30,9 @@ body:
     id: code-example
     attributes:
       label: Code example
-      description: A complete, minimal, self-contained example code that reproduces the issue. This will be automatically formatted into code, so no need for backticks.
+      description: |
+        A complete, minimal, self-contained example code that reproduces the issue.
+        This will be automatically formatted into code, so no need for backticks.
       placeholder: |
         import numpy as np
         import magpylib as magpy
@@ -44,5 +46,5 @@ body:
     attributes:
       label: Additional context
       placeholder: |
-        OS: [e.g. Linux 32bit]
-        IDE: [e.g. Spyder, PyCharm]
+        OS: [e.g. Linux 32bit, MacOs Monterey, Windows 10 64bit]
+        IDE: [e.g. Spyder, PyCharm, VSCode, Jupyterlab]
