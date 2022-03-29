@@ -7,16 +7,12 @@ body:
       value: |
         Thanks for taking the time to fill out this feature request report!
   - type: textarea
-    id: existing-problem
-    attributes:
-      label: Is your feature request related to some problem? If yes, please describe
-      description: A clear and concise description of what the problem is.
-      placeholder: I'm always frustrated when ...
-  - type: textarea
     id: feature-wish
     attributes:
       label: Describe the feature you'd like
-      description: A clear and concise description of what you want to happen.
+      description: |
+        A clear and concise description of what the problem is and/or what you want to happen.
+      placeholder: I'm always frustrated when ..
   - type: textarea
     id: considered-options
     attributes:
